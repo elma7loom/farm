@@ -57,6 +57,7 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
     
     with col_left:
         st.markdown("**⚙️ Efficiency Tiers (Editable)**")
+        # hide_index=True removes the leftmost row number column
         st.session_state.tier_df = st.data_editor(
             st.session_state.tier_df,
             column_config={
@@ -70,7 +71,8 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
             },
             disabled=["Tier", "Range"],
             use_container_width=True,
-            height=170
+            height=170,
+            hide_index=True
         )
 
     with col_right:
@@ -121,7 +123,7 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
     # =========================================================================
     st.subheader("🎯 Visual Water Savings Progress (Target Max: 60%)")
     
-    # Progress bar now fills completely at 60% savings
+    # Progress bar fills completely at 60% savings
     progress_val = min(1.0, max(0.0, water_savings_pct / 60.0))
     st.markdown(f"**Water Reduction Progress: {water_savings_pct:,.2f}% Saved**")
     st.progress(progress_val)
@@ -151,7 +153,7 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
     # ROW 4: CROP DATA TABLE
     # =========================================================================
     st.subheader("📋 Crop Data Table")
-    st.dataframe(df, use_container_width=True)
+    st.dataframe(df, use_container_width=True, hide_index=True)
 
     st.write("---")
     st.write(f"**Total Crops Managed:** {num_crops}")
