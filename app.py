@@ -41,45 +41,84 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
         
         crop_data.append({"Crop": crop_name, "Water Requirement (kL/ha)": crop_water_per_ha})
 
-    # --- MAIN SCREEN OUTPUTS ---
+    # --- MAIN SCREEN CALCULATIONS ---
     df = pd.DataFrame(crop_data)
     
-    # Calculate total efficient water requirement for each crop based on farm hectares (Crop Requirement x Farm Area)
+    # Calculate total efficient water requirement for each crop based on farm hectares
     df["Total Efficient Water (kL)"] = df["Water Requirement (kL/ha)"] * hectares
-    
-    # Efficient baseline target for the whole farm (Reference only)
     efficient_baseline = df["Total Efficient Water (kL)"].sum()
     
-    # Calculations based on starting vs current water consumption (Used for credits & tiers)
+    # Calculations based on starting vs current water consumption
     water_saved_kl = max(0.0, starting_water - current_water)
     water_saved_m3 = water_saved_kl  
     
-    # Savings percentage based on starting vs current consumption
     if starting_water > 0:
         water_savings_pct = (water_saved_kl / starting_water) * 100
     else:
         water_savings_pct = 0.0
 
-    st.subheader("📊 Summary & Water Efficiency Analysis")
+    # Initialize editable table data for strictly 3 tiers (0-20, 21-40, 41-60)
+    if "tier_df_state" not in st.session_state:
+        st.session_state.tier_df_state = pd.DataFrame([
+            {"Tier": "Tier 1", "Range": "0 - 20%", "Multiplier": 1.0},
+            {"Tier": "Tier 2", "Range": "21 - 40%", "Multiplier": 1.5},
+            {"Tier": "Tier 3", "Range": "41 - 60%", "Multiplier": 2.0},
+        ])
+
+    # Extract multipliers early so metrics can use them at the top
+    tier_1_mult = st.session_state.tier_df_state.loc[st.session_state.tier_df_state["Tier"] == "Tier 1", "Multiplier"].values[0]
+    tier_2_mult = st.session_state.tier_df_state.loc[st.session_state.tier_df_state["Tier"] == "Tier 2", "Multiplier"].values[0]
+    tier_3_mult = st.session_state.tier_df_state.loc[st.session_state.tier_df_state["Tier"] == "Tier 3", "Multiplier"].values[0]
+
+    # Determine active tier and multiplier based on savings percentage
+    if 0 <= water_savings_pct <= 20:
+        current_tier = "Tier 1 (0-20%)"
+        tier_multiplier = tier_1_mult
+    elif 20 < water_savings_pct <= 40:
+        current_tier = "Tier 2 (21-40%)"
+        tier_multiplier = tier_2_mult
+    else:
+        current_tier = "Tier 3 (41-60%)"
+        tier_multiplier = tier_3_mult
+
+    # Calculate final values
+    water_credits = water_saved_m3 / water_credit_value if water_credit_value > 0 else 0.0
+    water_credits_value = water_credits * tier_multiplier
+
+    # ==========================================
+    # VISUAL LAYOUT: HIGHLIGHTS AT THE VERY TOP
+    # ==========================================
+    st.subheader("🌟 Executive Summary & Financial Rewards")
     
-    # Display tables and bar chart cleanly on the main screen
+    top_col1, top_col2, top_col3, top_col4 = st.columns(4)
+    top_col1.metric("💰 Credits Value", f"AED {water_credits_value:,.2f}", help="Total monetary value based on credits and tier multiplier")
+    top_col2.metric("📈 Savings %", f"{water_savings_pct:,.2f}%")
+    top_col3.metric("🏆 Active Tier", current_tier)
+    top_col4.metric("⚡ Tier Multiplier", f"{tier_multiplier}x")
+
+    st.write("---")
+
+    # Detailed Water Metrics Row
+    st.subheader("📊 Water Balance Breakdown")
+    mid_col1, mid_col2, mid_col3, mid_col4, mid_col5 = st.columns(5)
+    mid_col1.metric("Starting Water", f"{starting_water:,.2f} kL")
+    mid_col2.metric("Current Water", f"{current_water:,.2f} kL")
+    mid_col3.metric("Water Saved", f"{water_saved_kl:,.2f} kL")
+    mid_col4.metric("Water Credits", f"{water_credits:,.2f}")
+    mid_col5.metric("Efficient Baseline", f"{efficient_baseline:,.2f} kL", help="Target benchmark (Requirement × Hectares)")
+
+    st.write("---")
+
+    # ==========================================
+    # SIDE-BY-SIDE TABLES & CHARTS
+    # ==========================================
     left_col, right_col = st.columns(2)
     
     with left_col:
-        st.markdown("### Crop Data Table")
+        st.markdown("### 📋 Crop Data Table")
         st.dataframe(df, use_container_width=True)
         
-        st.markdown("### Efficiency Tiers (Editable Multipliers)")
-        
-        # Initialize default editable table data for 3 tiers (0-20, 21-40, 41-60)
-        if "tier_df_state" not in st.session_state:
-            st.session_state.tier_df_state = pd.DataFrame([
-                {"Tier": "Tier 1", "Range": "0 - 20%", "Multiplier": 1.0},
-                {"Tier": "Tier 2", "Range": "21 - 40%", "Multiplier": 1.5},
-                {"Tier": "Tier 3", "Range": "41 - 60%", "Multiplier": 2.0},
-            ])
-
-        # Editable data table with limits (1.0 to 2.5)
+        st.markdown("### ⚙️ Efficiency Tiers (Editable Multipliers)")
         edited_tier_df = st.data_editor(
             st.session_state.tier_df_state,
             column_config={
@@ -95,49 +134,16 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
             use_container_width=True,
             key="tier_editor"
         )
-        
-        # Extract multipliers from the user-edited table (3 tiers)
-        tier_1_mult = edited_tier_df.loc[edited_tier_df["Tier"] == "Tier 1", "Multiplier"].values[0]
-        tier_2_mult = edited_tier_df.loc[edited_tier_df["Tier"] == "Tier 2", "Multiplier"].values[0]
-        tier_3_mult = edited_tier_df.loc[edited_tier_df["Tier"] == "Tier 3", "Multiplier"].values[0]
+        # Update session state with edited values
+        st.session_state.tier_df_state = edited_tier_df
 
-    # Determine active tier and multiplier based on savings percentage
-    if 0 <= water_savings_pct <= 20:
-        current_tier = "Tier 1 (0-20%)"
-        tier_multiplier = tier_1_mult
-    elif 20 < water_savings_pct <= 40:
-        current_tier = "Tier 2 (21-40%)"
-        tier_multiplier = tier_2_mult
-    else:
-        current_tier = "Tier 3 (41-60%)"
-        tier_multiplier = tier_3_mult
-
-    # Calculate base water credits and monetary value in AED
-    water_credits = water_saved_m3 / water_credit_value if water_credit_value > 0 else 0.0
-    water_credits_value = water_credits * tier_multiplier
-    
     with right_col:
-        st.markdown("### Total Efficient Water Requirement by Crop (kL)")
+        st.markdown("### 📉 Efficient Water Requirement by Crop")
         chart_df = df[["Crop", "Total Efficient Water (kL)"]].set_index("Crop")
         st.bar_chart(chart_df)
 
-    # Display key metrics across two rows above the tables for clear visibility
-    row1_col1, row1_col2, row1_col3, row1_col4, row1_col5 = st.columns(5)
-    row1_col1.metric("Starting Water", f"{starting_water:,.2f} kL")
-    row1_col2.metric("Current Water", f"{current_water:,.2f} kL")
-    row1_col3.metric("Efficient Baseline", f"{efficient_baseline:,.2f} kL", help="Target benchmark (Requirement × Hectares)")
-    row1_col4.metric("Water Saved (kL)", f"{water_saved_kl:,.2f} kL")
-    row1_col5.metric("Water Saved (m³)", f"{water_saved_m3:,.2f} m³")
-    
-    row2_col1, row2_col2, row2_col3, row2_col4, row2_col5 = st.columns(5)
-    row2_col1.metric("Savings %", f"{water_savings_pct:,.2f}%")
-    row2_col2.metric("Active Tier", current_tier)
-    row2_col3.metric("Tier Multiplier", f"{tier_multiplier}x")
-    row2_col4.metric("Water Credits", f"{water_credits:,.2f}")
-    row2_col5.metric("Credits Value", f"AED {water_credits_value:,.2f}", help="Water credits multiplied by active tier multiplier")
-    
-    st.write(f"**Farm Size:** {hectares} hectares &nbsp;&nbsp;|&nbsp;&nbsp; **Total Crops:** {num_crops}")
     st.write("---")
+    st.write(f"**Farm Size:** {hectares} hectares &nbsp;&nbsp;|&nbsp;&nbsp; **Total Crops Managed:** {num_crops}")
 
 else:
     st.sidebar.error("Please enter a valid number containing between 1 and 15 digits.")
