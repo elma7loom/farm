@@ -49,9 +49,8 @@ st.markdown(
 
 st.title("🌾 Interactive Water Credit Farm Simulator")
 st.markdown(
-    "Designed for Judges & Investors: Configure your farm using the 6 core"
-    " parameters in the sidebar to simulate water savings, efficiency tiers,"
-    " and financial payouts in real-time."
+    "Designed for Judges & Investors: Configure your farm layout, name custom"
+    " crops, and simulate water savings and financial payouts in real-time."
 )
 
 # Sidebar / Input Section
@@ -65,7 +64,7 @@ crop_defaults = {
     "Custom Crop": 10000,
 }
 
-# Slider 3: How many crops grown
+# How many crops grown
 num_crops = st.sidebar.selectbox(
     "3. How many crops grown?", [1, 2, 3], index=1
 )
@@ -80,15 +79,27 @@ total_baseline_water = 0
 for i in range(num_crops):
   st.sidebar.markdown(f"**Crop #{i+1} Configuration**")
 
-  # Slider 4: Types of crops grown
+  # Types of crops grown
   c_type = st.sidebar.selectbox(
       f"4. Type of Crop #{i+1}", list(crop_defaults.keys()), key=f"crop_{i}"
   )
+
+  # Custom crop name input if selected
+  if c_type == "Custom Crop":
+    custom_name = st.sidebar.text_input(
+        f"Name your custom crop #{i+1}",
+        value="Alfalfa",
+        key=f"custom_name_{i}",
+    )
+    actual_crop_name = custom_name
+  else:
+    actual_crop_name = c_type
+
   default_rate = crop_defaults[c_type]
 
-  # Slider 5: Annual water consumption of each crop
+  # Annual water consumption of each crop
   c_rate = st.sidebar.number_input(
-      f"5. Annual Water Rate ($m^3$/ha) for Crop #{i+1}",
+      f"5. Annual Water Rate ($m^3$/ha) for {actual_crop_name}",
       min_value=500,
       max_value=500000,
       value=default_rate,
@@ -96,9 +107,9 @@ for i in range(num_crops):
       key=f"rate_{i}",
   )
 
-  # Slider 1: Size of farm (allocated per crop)
+  # Size of farm (allocated per crop)
   c_area = st.sidebar.slider(
-      f"1. Size of Farm (Hectares) for Crop #{i+1}",
+      f"1. Size of Farm (Hectares) for {actual_crop_name}",
       min_value=0.5,
       max_value=30.0,
       value=2.0 if i == 0 else 1.0,
@@ -111,16 +122,16 @@ for i in range(num_crops):
   total_baseline_water += crop_water
 
   crop_data_list.append({
-      "Crop": c_type,
+      "Crop": actual_crop_name,
       "Hectares (Size)": c_area,
       "Water Rate ($m^3$/ha)": c_rate,
       "Total Baseline Water ($m^3$)": crop_water,
   })
 
 st.sidebar.markdown("---")
-st.sidebar.subheader("💧 Efficiency & Equity Controls")
+st.sidebar.subheader("💧 Efficiency Controls")
 
-# Slider 2: Water % saved
+# Water % saved
 water_saved_pct = st.sidebar.slider(
     "2. Percentage of Water Saved (%)",
     min_value=0.0,
@@ -128,22 +139,6 @@ water_saved_pct = st.sidebar.slider(
     value=20.0,
     step=0.5,
     help="Total percentage reduction in water consumption across the farm.",
-)
-
-# Slider 6: Small farm multiplier
-SMALL_FARM_LIMIT = 3.5
-is_small_farm = total_farm_area <= SMALL_FARM_LIMIT
-
-small_farm_multiplier = st.sidebar.slider(
-    "6. Small Farm Multiplier (Bonus)",
-    min_value=1.0,
-    max_value=3.0,
-    value=1.5,
-    step=0.1,
-    help=(
-        "Automatic bonus multiplier applied if total farm size is <= 3.5"
-        " hectares."
-    ),
 )
 
 # --- Calculations ---
@@ -163,9 +158,8 @@ else:
   tier_name = "Tier 4 (45-60%)"
   tier_multiplier = 2.0
 
-base_credits = water_saved_m3 / 10.0 * tier_multiplier
-final_multiplier = small_farm_multiplier if is_small_farm else 1.0
-total_credits = base_credits * final_multiplier
+# Base credits calculation (Multiplier without small farm bonus)
+total_credits = (water_saved_m3 / 10.0) * tier_multiplier
 
 credit_value_aed = 3.13
 total_revenue_aed = total_credits * credit_value_aed
@@ -190,32 +184,17 @@ st.success(
     f"**Calculation Breakdown:**\n"
     f"1. **Total Farm Size:** {total_farm_area} hectares across {num_crops}"
     f" crop type(s)\n"
-    f"2. **Base Credits:** {base_credits:,.1f} WC (Based on {water_saved_m3:,.0f}"
-    f" $m^3$ saved & {tier_name})\n"
-    f"3. **Small Farm Bonus:** × {final_multiplier} Multiplier ➔"
-    f" **{total_credits:,.1f} Final WC**\n"
+    f"2. **Total Water Saved:** {water_saved_m3:,.0f} $m^3$\n"
+    f"3. **Water Credits Earned:** ({water_saved_m3:,.0f} / 10) ×"
+    f" {tier_multiplier} ({tier_name}) = **{total_credits:,.1f} WC**\n"
     f"4. **Cash Conversion:** {total_credits:,.1f} WC × 3.13 AED ="
     f" **{total_revenue_aed:,.2f} AED**"
 )
 
 st.markdown("---")
 
-# Farm Status & Table Section
-st.subheader("📊 Farm Status & Crop Allocation")
-if is_small_farm:
-  st.info(
-      f"🛡️ **Small Farm Protection ACTIVE**: Total farm area is"
-      f" **{total_farm_area} ha** (<= {SMALL_FARM_LIMIT} ha). The"
-      f" **{small_farm_multiplier}x** small farm multiplier is automatically"
-      " applied!"
-  )
-else:
-  st.info(
-      f"🏢 **Enterprise Farm Status**: Total farm area is"
-      f" **{total_farm_area} ha** (above the {SMALL_FARM_LIMIT} ha"
-      " threshold). Standard rates apply."
-  )
-
+# Farm Allocation Table Section
+st.subheader("📊 Farm Allocation Summary")
 crop_df = pd.DataFrame(crop_data_list)
 st.table(crop_df)
 
@@ -238,7 +217,7 @@ for p in percentages:
     t_m = 1.5
   else:
     t_m = 2.0
-  c = (s_m3 / 10.0) * t_m * final_multiplier
+  c = (s_m3 / 10.0) * t_m
   credits_list.append(c)
   revenues_list.append(c * credit_value_aed)
 
@@ -254,8 +233,7 @@ with chart_col1:
   st.markdown("**Mathematical Formula:**")
   st.markdown(
       r"$$\text{WC} = \left(\frac{\text{Baseline Water} \times"
-      r" \frac{\text{Saved \%}}{100}}{10}\right) \times \text{Tier Multiplier}"
-      r" \times \text{Small Farm Multiplier}$$"
+      r" \frac{\text{Saved \%}}{100}}{10}\right) \times \text{Tier Multiplier}$$"
   )
 
 with chart_col2:
