@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 
-# Page configuration for a wider layout for side-by-side display
+# Page configuration for a wider layout
 st.set_page_config(layout="wide")
 
 st.title("🌱 Farm Data Visualization & Water Efficiency Dashboard")
@@ -18,6 +18,13 @@ actual_water = st.sidebar.number_input("Enter actual water consumption for the f
 # Water Credit slider configuration
 st.sidebar.header("Water Credit Settings")
 water_credit_value = st.sidebar.slider("1 Water Credit = (m³)", min_value=1.0, max_value=100.0, value=10.0, step=1.0)
+
+# Efficiency Tier Multipliers (Sliders from 1.0 to 2.5)
+st.sidebar.header("Efficiency Tier Multipliers")
+tier_1_mult = st.sidebar.slider("Tier 1 (0 - 20%) Multiplier", min_value=1.0, max_value=2.5, value=1.0, step=0.1)
+tier_2_mult = st.sidebar.slider("Tier 2 (21 - 40%) Multiplier", min_value=1.0, max_value=2.5, value=1.5, step=0.1)
+tier_3_mult = st.sidebar.slider("Tier 3 (41 - 60%) Multiplier", min_value=1.0, max_value=2.5, value=2.0, step=0.1)
+tier_4_mult = st.sidebar.slider("Tier 4 (61%+) Multiplier", min_value=1.0, max_value=2.5, value=2.5, step=0.1)
 
 # Blank for amount of crops grown (accepts 1-15 digits)
 num_crops_input = st.sidebar.text_input("Enter the amount of crops grown (1-15 digits):", value="1")
@@ -50,14 +57,29 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
     water_efficiency_gap_kl = actual_water - efficient_water
     water_efficiency_gap_m3 = water_efficiency_gap_kl  
     
-    # Water credits calculation based on the efficiency gap and slider value
-    water_credits = water_efficiency_gap_m3 / water_credit_value if water_credit_value > 0 else 0.0
-    
     # Water efficiency gap percentage calculation (guarding against division by zero)
     if efficient_water > 0:
         water_efficiency_gap_pct = (water_efficiency_gap_kl / efficient_water) * 100
     else:
         water_efficiency_gap_pct = 0.0
+        
+    # Determine active tier and multiplier based on efficiency gap percentage
+    if 0 <= water_efficiency_gap_pct <= 20:
+        current_tier = "Tier 1 (0-20%)"
+        tier_multiplier = tier_1_mult
+    elif 20 < water_efficiency_gap_pct <= 40:
+        current_tier = "Tier 2 (21-40%)"
+        tier_multiplier = tier_2_mult
+    elif 40 < water_efficiency_gap_pct <= 60:
+        current_tier = "Tier 3 (41-60%)"
+        tier_multiplier = tier_3_mult
+    else:
+        current_tier = "Tier 4 (61%+)"
+        tier_multiplier = tier_4_mult
+
+    # Calculate final water credits using the base value and active tier multiplier
+    base_water_credits = water_efficiency_gap_m3 / water_credit_value if water_credit_value > 0 else 0.0
+    water_credits = base_water_credits * tier_multiplier
     
     st.subheader("📊 Summary & Water Efficiency Analysis")
     
@@ -68,9 +90,11 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
     row1_col3.metric("Gap (kL)", f"{water_efficiency_gap_kl:,.2f} kL")
     row1_col4.metric("Gap (m³)", f"{water_efficiency_gap_m3:,.2f} m³")
     
-    row2_col1, row2_col2, row2_col3 = st.columns(3)
+    row2_col1, row2_col2, row2_col3, row2_col4 = st.columns(4)
     row2_col1.metric("Gap %", f"{water_efficiency_gap_pct:,.2f}%")
-    row2_col2.metric("Water Credits", f"{water_credits:,.2f}", help=f"Calculated using 1 Credit = {water_credit_value} m³")
+    row2_col2.metric("Active Tier", current_tier)
+    row2_col3.metric("Tier Multiplier", f"{tier_multiplier}x")
+    row2_col4.metric("Water Credits", f"{water_credits:,.2f}", help=f"Calculated using base credits * {tier_multiplier}x tier multiplier")
     
     st.write(f"**Farm Size:** {hectares} hectares &nbsp;&nbsp;|&nbsp;&nbsp; **Total Crops:** {num_crops}")
     st.write("---")
