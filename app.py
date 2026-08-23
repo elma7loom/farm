@@ -57,7 +57,7 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
     
     with col_left:
         st.markdown("**⚙️ Efficiency Tiers (Editable)**")
-        # hide_index=True removes the leftmost row number column
+        # num_rows="fixed" and height="content" remove the extra blank row and trailing space
         st.session_state.tier_df = st.data_editor(
             st.session_state.tier_df,
             column_config={
@@ -71,8 +71,9 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
             },
             disabled=["Tier", "Range"],
             use_container_width=True,
-            height=170,
-            hide_index=True
+            height="content",
+            hide_index=True,
+            num_rows="fixed"
         )
 
     with col_right:
