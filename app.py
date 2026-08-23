@@ -57,7 +57,6 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
     
     with col_left:
         st.markdown("**⚙️ Efficiency Tiers (Editable)**")
-        # Clean assignment without key conflicts to avoid pandas boolean errors
         st.session_state.tier_df = st.data_editor(
             st.session_state.tier_df,
             column_config={
@@ -81,7 +80,7 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
 
     st.write("---")
 
-    # --- CALCULATIONS (Using Freshly Updated Multipliers) ---
+    # --- CALCULATIONS ---
     efficient_baseline = df["Water Consumption (kL)"].sum()
     
     # Savings calculations (Starting vs Current)
@@ -118,11 +117,12 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
     water_credits_value = water_credits * tier_multiplier
 
     # =========================================================================
-    # ROW 2: VISUAL WATER SAVINGS PROGRESS & METRICS
+    # ROW 2: VISUAL WATER SAVINGS PROGRESS & METRICS (Scaled to 60% max)
     # =========================================================================
-    st.subheader("🎯 Visual Water Savings Progress")
+    st.subheader("🎯 Visual Water Savings Progress (Target Max: 60%)")
     
-    progress_val = min(1.0, max(0.0, water_savings_pct / 100.0))
+    # Progress bar now fills completely at 60% savings
+    progress_val = min(1.0, max(0.0, water_savings_pct / 60.0))
     st.markdown(f"**Water Reduction Progress: {water_savings_pct:,.2f}% Saved**")
     st.progress(progress_val)
     
