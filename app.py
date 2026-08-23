@@ -113,9 +113,9 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
         current_tier = "Tier 4 (61%+)"
         tier_multiplier = tier_4_mult
 
-    # Calculate final water credits using the base value and active tier multiplier
-    base_water_credits = water_efficiency_gap_m3 / water_credit_value if water_credit_value > 0 else 0.0
-    water_credits = base_water_credits * tier_multiplier
+    # Calculate base water credits and water credits value
+    water_credits = water_efficiency_gap_m3 / water_credit_value if water_credit_value > 0 else 0.0
+    water_credits_value = water_credits * tier_multiplier
     
     with right_col:
         st.markdown("### Water Consumption by Crop")
@@ -128,11 +128,12 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
     row1_col3.metric("Gap (kL)", f"{water_efficiency_gap_kl:,.2f} kL")
     row1_col4.metric("Gap (m³)", f"{water_efficiency_gap_m3:,.2f} m³")
     
-    row2_col1, row2_col2, row2_col3, row2_col4 = st.columns(4)
+    row2_col1, row2_col2, row2_col3, row2_col4, row2_col5 = st.columns(5)
     row2_col1.metric("Gap %", f"{water_efficiency_gap_pct:,.2f}%")
     row2_col2.metric("Active Tier", current_tier)
     row2_col3.metric("Tier Multiplier", f"{tier_multiplier}x")
-    row2_col4.metric("Water Credits", f"{water_credits:,.2f}", help=f"Calculated using base credits * {tier_multiplier}x tier multiplier")
+    row2_col4.metric("Water Credits", f"{water_credits:,.2f}")
+    row2_col5.metric("Credits Value", f"{water_credits_value:,.2f}", help="Amount of water credits multiplied by the active tier multiplier")
     
     st.write(f"**Farm Size:** {hectares} hectares &nbsp;&nbsp;|&nbsp;&nbsp; **Total Crops:** {num_crops}")
     st.write("---")
