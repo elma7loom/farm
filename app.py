@@ -147,7 +147,6 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
     st.subheader("⚙️ Efficiency Tiers (Editable Multipliers)")
     st.markdown("*(Scroll down here anytime you want to customize your tier multiplier values)*")
     
-    # Streamlit natively handles state binding and updates via the widget key
     st.data_editor(
         st.session_state.tier_editor,
         column_config={
@@ -170,5 +169,3 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
 else:
     st.sidebar.error("Please enter a valid number containing between 1 and 15 digits.")
     st.warning("👈 Please enter a valid number of crops in the sidebar to view the dashboard.")
-
-
