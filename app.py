@@ -13,7 +13,6 @@ st.markdown(
 # Sidebar / Input Section
 st.sidebar.header("🎛️ Simulation Controls")
 
-# Crop defaults (annual m3 per hectare)
 crop_defaults = {
     "Palm Tree": 22000,
     "Cherry Tomato": 9000,
@@ -54,7 +53,7 @@ water_saved_pct = st.sidebar.slider(
 st.sidebar.markdown("---")
 st.sidebar.subheader("🛡️ Small Farm Protection")
 
-# Fixed threshold at 3.5 hectares as requested
+# Fixed threshold at 3.5 hectares
 SMALL_FARM_LIMIT = 3.5
 is_small_farm = farm_area <= SMALL_FARM_LIMIT
 
@@ -89,8 +88,6 @@ else:
 
 # Credits calculation
 base_credits = water_saved_m3 / 10.0 * tier_multiplier
-
-# Apply small farm multiplier automatically if <= 3.5 ha
 final_multiplier = small_farm_multiplier if is_small_farm else 1.0
 total_credits = base_credits * final_multiplier
 
@@ -105,74 +102,89 @@ col1.metric(
     "💧 Water Saved", f"{water_saved_m3:,.0f} m³", f"{water_saved_pct}% reduction"
 )
 col2.metric("⭐ Efficiency Tier", tier_name, f"Multiplier: {tier_multiplier}x")
-col3.metric("🪙 Water Credits Earned", f"{total_credits:,.1f}", "Credits")
+col3.metric("🪙 Water Credits Earned", f"{total_credits:,.1f}", "WC")
 col4.metric(
-    "💰 Estimated Revenue",
+    "💰 Estimated Profit",
     f"{total_revenue_aed:,.2f} AED",
     "@ 3.13 AED / credit",
 )
 
 st.markdown("---")
 
-# Visual Analysis Section
-c1, c2 = st.columns(2)
-
-with c1:
-  st.subheader("📊 Farm Status & Equity Check")
-  if is_small_farm:
-    st.success(
-        f"🛡️ **Small Farm Protection ACTIVE**: This farm is **{farm_area} ha**"
-        f" (which is <= {SMALL_FARM_LIMIT} ha). The"
-        f" **{small_farm_multiplier}x** smallholder bonus is automatically"
-        " applied!"
-    )
-  else:
-    st.info(
-        f"🏢 **Enterprise Farm Status**: This farm is **{farm_area} ha** (above"
-        f" the {SMALL_FARM_LIMIT} ha smallholder cutoff). Standard rates"
-        " apply."
-    )
-
-  breakdown_df = pd.DataFrame({
-      "Metric": [
-          "Farm Size",
-          "Crop Type",
-          "Baseline Water Use",
-          "Water Saved",
-          "Tier Multiplier",
-          "Smallholder Bonus Applied",
-          "Total Revenue",
-      ],
-      "Value": [
-          f"{farm_area} ha",
-          selected_crop,
-          f"{total_baseline_water:,.0f} m³",
-          f"{water_saved_m3:,.0f} m³",
-          f"{tier_multiplier}x",
-          f"{final_multiplier}x",
-          f"{total_revenue_aed:,.2f} AED",
-      ],
-  })
-  st.table(breakdown_df)
-
-with c2:
-  st.subheader("📈 Revenue Scaling Across Tiers")
-  percentages = list(range(0, 21, 1))
-  revenues = []
-  for p in percentages:
-    s_m3 = total_baseline_water * (p / 100.0)
-    if p <= 5:
-      t_m = 1.0
-    elif p <= 10:
-      t_m = 1.2
-    elif p <= 15:
-      t_m = 1.5
-    else:
-      t_m = 2.0
-    c = (s_m3 / 10.0) * t_m * final_multiplier
-    revenues.append(c * credit_value_aed)
-
-  chart_df = pd.DataFrame(
-      {"Water Saved (%)": percentages, "Revenue (AED)": revenues}
+# Farm Status & Table Section
+st.subheader("📊 Farm Status & Equity Check")
+if is_small_farm:
+  st.success(
+      f"🛡️ **Small Farm Protection ACTIVE**: This farm is **{farm_area} ha**"
+      f" (which is <= {SMALL_FARM_LIMIT} ha). The"
+      f" **{small_farm_multiplier}x** smallholder bonus is automatically"
+      " applied!"
   )
-  st.line_chart(chart_df.set_index("Water Saved (%)"))
+else:
+  st.info(
+      f"🏢 **Enterprise Farm Status**: This farm is **{farm_area} ha** (above"
+      f" the {SMALL_FARM_LIMIT} ha smallholder cutoff). Standard rates apply."
+  )
+
+breakdown_df = pd.DataFrame({
+    "Metric": [
+        "Farm Size",
+        "Crop Type",
+        "Baseline Water Use",
+        "Water Saved",
+        "Tier Multiplier",
+        "Smallholder Bonus Applied",
+        "Water Credits Earned",
+        "Total Profit (AED)",
+    ],
+    "Value": [
+        f"{farm_area} ha",
+        selected_crop,
+        f"{total_baseline_water:,.0f} m³",
+        f"{water_saved_m3:,.0f} m³",
+        f"{tier_multiplier}x",
+        f"{final_multiplier}x",
+        f"{total_credits:,.1f} WC",
+        f"{total_revenue_aed:,.2f} AED",
+    ],
+})
+st.table(breakdown_df)
+
+st.markdown("---")
+
+# Dual Graphs Section: Water Credits vs. Profit/Revenue
+st.subheader("📈 Simulation Graphs: Water Credits vs. Financial Profit")
+
+percentages = list(range(0, 21, 1))
+credits_list = []
+revenues_list = []
+
+for p in percentages:
+  s_m3 = total_baseline_water * (p / 100.0)
+  if p <= 5:
+    t_m = 1.0
+  elif p <= 10:
+    t_m = 1.2
+  elif p <= 15:
+    t_m = 1.5
+  else:
+    t_m = 2.0
+  c = (s_m3 / 10.0) * t_m * final_multiplier
+  credits_list.append(c)
+  revenues_list.append(c * credit_value_aed)
+
+chart_col1, chart_col2 = st.columns(2)
+
+with chart_col1:
+  st.markdown("### 🪙 Water Credits (WC) Earned")
+  credits_df = pd.DataFrame(
+      {"Water Saved (%)": percentages, "Water Credits (WC)": credits_list}
+  )
+  st.line_chart(credits_df.set_index("Water Saved (%)"))
+
+with chart_col2:
+  st.markdown("### 💰 Financial Profit / Revenue (AED)")
+  revenue_df = pd.DataFrame(
+      {"Water Saved (%)": percentages, "Profit (AED)": revenues_list}
+  )
+  st.line_chart(revenue_df.set_index("Water Saved (%)"))
