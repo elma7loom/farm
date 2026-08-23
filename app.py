@@ -57,7 +57,9 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
     else:
         water_savings_pct = 0.0
 
-    # Initialize editable table data for strictly 3 tiers (0-20, 21-40, 41-60)
+    # =========================================================================
+    # 1. RENDER & CAPTURE EDITABLE TIERS TABLE FIRST (Ensures Instant Reactivity)
+    # =========================================================================
     if "tier_df_state" not in st.session_state:
         st.session_state.tier_df_state = pd.DataFrame([
             {"Tier": "Tier 1", "Range": "0 - 20%", "Multiplier": 1.0},
@@ -65,74 +67,6 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
             {"Tier": "Tier 3", "Range": "41 - 60%", "Multiplier": 2.0},
         ])
 
-    # Extract multipliers
-    tier_1_mult = st.session_state.tier_df_state.loc[st.session_state.tier_df_state["Tier"] == "Tier 1", "Multiplier"].values[0]
-    tier_2_mult = st.session_state.tier_df_state.loc[st.session_state.tier_df_state["Tier"] == "Tier 2", "Multiplier"].values[0]
-    tier_3_mult = st.session_state.tier_df_state.loc[st.session_state.tier_df_state["Tier"] == "Tier 3", "Multiplier"].values[0]
-
-    # Determine active tier and multiplier
-    if 0 <= water_savings_pct <= 20:
-        current_tier = "Tier 1 (0-20%)"
-        tier_multiplier = tier_1_mult
-    elif 20 < water_savings_pct <= 40:
-        current_tier = "Tier 2 (21-40%)"
-        tier_multiplier = tier_2_mult
-    else:
-        current_tier = "Tier 3 (41-60%)"
-        tier_multiplier = tier_3_mult
-
-    # Calculate financial values
-    water_credits = water_saved_m3 / water_credit_value if water_credit_value > 0 else 0.0
-    water_credits_value = water_credits * tier_multiplier
-
-    # =========================================================================
-    # VISUAL ROW 1: PROGRESS BAR & WATER REDUCTION OVERVIEW ALONGSIDE CHART
-    # =========================================================================
-    st.subheader("🎯 Visual Water Savings Progress")
-    
-    top_col1, top_col2 = st.columns([1, 1])
-    
-    with top_col1:
-        # Visual progress bar representing savings percentage (capped between 0 and 1)
-        progress_val = min(1.0, max(0.0, water_savings_pct / 100.0))
-        st.markdown(f"**Water Reduction Progress: {water_savings_pct:,.2f}% Saved**")
-        st.progress(progress_val)
-        
-        # Breakdown metrics showing the flow from Starting -> Current -> Saved
-        b_col1, b_col2, b_col3 = st.columns(3)
-        b_col1.metric("Original (Starting)", f"{starting_water:,.2f} kL")
-        b_col2.metric("Current Use", f"{current_water:,.2f} kL")
-        b_col3.metric("Water Saved", f"{water_saved_kl:,.2f} kL")
-
-        ref_col1, ref_col2 = st.columns(2)
-        ref_col1.metric("Water Saved (m³)", f"{water_saved_m3:,.2f} m³")
-        ref_col2.metric("Efficient Target", f"{efficient_baseline:,.2f} kL", help="Requirement × Hectares (Reference)")
-
-    with top_col2:
-        st.markdown("**Efficient Water Requirement by Crop**")
-        chart_df = df[["Crop", "Total Efficient Water (kL)"]].set_index("Crop")
-        st.bar_chart(chart_df, height=240)
-
-    st.write("---")
-
-    # =========================================================================
-    # ROW 2: FINANCIAL REWARDS & ACTIVE TIERS
-    # =========================================================================
-    st.subheader("💰 Financial Rewards & Active Tiers")
-    
-    fin_col1, fin_col2 = st.columns(2)
-    with fin_col1:
-        st.metric("🏆 Active Tier", current_tier)
-        st.metric("Water Credits", f"{water_credits:,.2f}")
-    with fin_col2:
-        st.metric("⚡ Tier Multiplier", f"{tier_multiplier}x")
-        st.metric("Credits Value", f"AED {water_credits_value:,.2f}")
-
-    st.write("---")
-
-    # =========================================================================
-    # ROW 3: EFFICIENCY TIERS TABLE PLACED BELOW FINANCIAL REWARDS
-    # =========================================================================
     st.subheader("⚙️ Efficiency Tiers (Editable Multipliers)")
     edited_tier_df = st.data_editor(
         st.session_state.tier_df_state,
@@ -151,10 +85,73 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
     )
     st.session_state.tier_df_state = edited_tier_df
 
+    # Extract multipliers instantly from the user-edited table
+    tier_1_mult = edited_tier_df.loc[edited_tier_df["Tier"] == "Tier 1", "Multiplier"].values[0]
+    tier_2_mult = edited_tier_df.loc[edited_tier_df["Tier"] == "Tier 2", "Multiplier"].values[0]
+    tier_3_mult = edited_tier_df.loc[edited_tier_df["Tier"] == "Tier 3", "Multiplier"].values[0]
+
+    # Determine active tier and multiplier based on strict 3-tier structure
+    if 0 <= water_savings_pct <= 20:
+        current_tier = "Tier 1 (0-20%)"
+        tier_multiplier = tier_1_mult
+    elif 20 < water_savings_pct <= 40:
+        current_tier = "Tier 2 (21-40%)"
+        tier_multiplier = tier_2_mult
+    else:
+        current_tier = "Tier 3 (41-60%)"
+        tier_multiplier = tier_3_mult
+
+    # Calculate financial values using the freshly extracted multipliers
+    water_credits = water_saved_m3 / water_credit_value if water_credit_value > 0 else 0.0
+    water_credits_value = water_credits * tier_multiplier
+
     st.write("---")
 
     # =========================================================================
-    # ROW 4: CROP DATA TABLE
+    # 2. VISUAL ROW: PROGRESS BAR & WATER REDUCTION OVERVIEW ALONGSIDE CHART
+    # =========================================================================
+    st.subheader("🎯 Visual Water Savings Progress")
+    
+    top_col1, top_col2 = st.columns([1, 1])
+    
+    with top_col1:
+        progress_val = min(1.0, max(0.0, water_savings_pct / 100.0))
+        st.markdown(f"**Water Reduction Progress: {water_savings_pct:,.2f}% Saved**")
+        st.progress(progress_val)
+        
+        b_col1, b_col2, b_col3 = st.columns(3)
+        b_col1.metric("Original (Starting)", f"{starting_water:,.2f} kL")
+        b_col2.metric("Current Use", f"{current_water:,.2f} kL")
+        b_col3.metric("Water Saved", f"{water_saved_kl:,.2f} kL")
+
+        ref_col1, ref_col2 = st.columns(2)
+        ref_col1.metric("Water Saved (m³)", f"{water_saved_m3:,.2f} m³")
+        ref_col2.metric("Efficient Target", f"{efficient_baseline:,.2f} kL", help="Requirement × Hectares (Reference)")
+
+    with top_col2:
+        st.markdown("**Efficient Water Requirement by Crop**")
+        chart_df = df[["Crop", "Total Efficient Water (kL)"]].set_index("Crop")
+        st.bar_chart(chart_df, height=240)
+
+    st.write("---")
+
+    # =========================================================================
+    # 3. FINANCIAL REWARDS & ACTIVE TIERS (Updates instantly on table edit)
+    # =========================================================================
+    st.subheader("💰 Financial Rewards & Active Tiers")
+    
+    fin_col1, fin_col2 = st.columns(2)
+    with fin_col1:
+        st.metric("🏆 Active Tier", current_tier)
+        st.metric("Water Credits", f"{water_credits:,.2f}")
+    with fin_col2:
+        st.metric("⚡ Tier Multiplier", f"{tier_multiplier}x")
+        st.metric("Credits Value", f"AED {water_credits_value:,.2f}")
+
+    st.write("---")
+
+    # =========================================================================
+    # 4. CROP DATA TABLE
     # =========================================================================
     st.subheader("📋 Crop Data Table")
     st.dataframe(df, use_container_width=True)
