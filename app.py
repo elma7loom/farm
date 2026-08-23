@@ -170,5 +170,5 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
 else:
     st.sidebar.error("Please enter a valid number containing between 1 and 15 digits.")
     st.warning("👈 Please enter a valid number of crops in the sidebar to view the dashboard.")
-```eof
+
 
