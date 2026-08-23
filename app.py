@@ -42,14 +42,12 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
         crop_data.append({"Crop": crop_name, "Water Requirement (kL/ha)": crop_water_per_ha})
 
     # --- STATE INITIALIZATION FOR TIERS ---
-    if "tier_editor" not in st.session_state:
-        st.session_state.tier_editor = pd.DataFrame([
+    if "tier_df" not in st.session_state:
+        st.session_state.tier_df = pd.DataFrame([
             {"Tier": "Tier 1", "Range": "0 - 20%", "Multiplier": 1.0},
             {"Tier": "Tier 2", "Range": "21 - 40%", "Multiplier": 1.5},
             {"Tier": "Tier 3", "Range": "41 - 60%", "Multiplier": 2.0},
         ])
-
-    active_tier_df = st.session_state.tier_editor
 
     # --- CALCULATIONS ---
     df = pd.DataFrame(crop_data)
@@ -67,7 +65,8 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
     else:
         water_savings_pct = 0.0
 
-    # Extract multipliers safely from active_tier_df
+    # Extract multipliers safely from current session state dataframe
+    active_tier_df = st.session_state.tier_df
     try:
         tier_1_mult = float(active_tier_df.loc[active_tier_df["Tier"] == "Tier 1", "Multiplier"].values[0])
         tier_2_mult = float(active_tier_df.loc[active_tier_df["Tier"] == "Tier 2", "Multiplier"].values[0])
@@ -99,8 +98,9 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
     
     with col_left:
         st.markdown("**⚙️ Efficiency Tiers**")
-        st.data_editor(
-            st.session_state.tier_editor,
+        # Capture edits directly without conflicting keys
+        edited_df = st.data_editor(
+            st.session_state.tier_df,
             column_config={
                 "Multiplier": st.column_config.NumberColumn(
                     "Multiplier",
@@ -112,9 +112,9 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
             },
             disabled=["Tier", "Range"],
             use_container_width=True,
-            key="tier_editor",
             height=170
         )
+        st.session_state.tier_df = edited_df
 
     with col_right:
         st.markdown("**📉 Efficient Water Requirement by Crop**")
