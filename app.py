@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 
-# Page configuration for a wider layout to make best use of side-by-side display
+# Page configuration for a wider layout for side-by-side display
 st.set_page_config(layout="wide")
 
 st.title("🌱 Farm Data Visualization & Water Efficiency Dashboard")
@@ -14,6 +14,10 @@ hectares = st.sidebar.number_input("Enter the hectares of the farm:", min_value=
 
 # Enter actual water consumption for the farm
 actual_water = st.sidebar.number_input("Enter actual water consumption for the farm (kL):", min_value=0.0, format="%.2f")
+
+# Water Credit slider configuration
+st.sidebar.header("Water Credit Settings")
+water_credit_value = st.sidebar.slider("1 Water Credit = (m³)", min_value=1.0, max_value=100.0, value=10.0, step=1.0)
 
 # Blank for amount of crops grown (accepts 1-15 digits)
 num_crops_input = st.sidebar.text_input("Enter the amount of crops grown (1-15 digits):", value="1")
@@ -42,23 +46,31 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
     # Efficient water consumption is the sum of all crop water consumptions
     efficient_water = df["Water Consumption (kL)"].sum()
     
-    # Water efficiency gap calculation
-    water_efficiency_gap = actual_water - efficient_water
+    # Water efficiency gap calculations (Note: 1 kL = 1 m³)
+    water_efficiency_gap_kl = actual_water - efficient_water
+    water_efficiency_gap_m3 = water_efficiency_gap_kl  
+    
+    # Water credits calculation based on the efficiency gap and slider value
+    water_credits = water_efficiency_gap_m3 / water_credit_value if water_credit_value > 0 else 0.0
     
     # Water efficiency gap percentage calculation (guarding against division by zero)
     if efficient_water > 0:
-        water_efficiency_gap_pct = (water_efficiency_gap / efficient_water) * 100
+        water_efficiency_gap_pct = (water_efficiency_gap_kl / efficient_water) * 100
     else:
         water_efficiency_gap_pct = 0.0
     
     st.subheader("📊 Summary & Water Efficiency Analysis")
     
-    # Display key metrics using Streamlit metrics across 4 columns
-    col1, col2, col3, col4 = st.columns(4)
-    col1.metric("Actual Water", f"{actual_water:,.2f} kL")
-    col2.metric("Efficient Water", f"{efficient_water:,.2f} kL")
-    col3.metric("Efficiency Gap", f"{water_efficiency_gap:,.2f} kL")
-    col4.metric("Gap %", f"{water_efficiency_gap_pct:,.2f}%")
+    # Display key metrics across two rows for clear readability
+    row1_col1, row1_col2, row1_col3, row1_col4 = st.columns(4)
+    row1_col1.metric("Actual Water", f"{actual_water:,.2f} kL")
+    row1_col2.metric("Efficient Water", f"{efficient_water:,.2f} kL")
+    row1_col3.metric("Gap (kL)", f"{water_efficiency_gap_kl:,.2f} kL")
+    row1_col4.metric("Gap (m³)", f"{water_efficiency_gap_m3:,.2f} m³")
+    
+    row2_col1, row2_col2, row2_col3 = st.columns(3)
+    row2_col1.metric("Gap %", f"{water_efficiency_gap_pct:,.2f}%")
+    row2_col2.metric("Water Credits", f"{water_credits:,.2f}", help=f"Calculated using 1 Credit = {water_credit_value} m³")
     
     st.write(f"**Farm Size:** {hectares} hectares &nbsp;&nbsp;|&nbsp;&nbsp; **Total Crops:** {num_crops}")
     st.write("---")
