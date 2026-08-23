@@ -10,10 +10,11 @@ st.title("🌱 Farm Data Visualization & Water Efficiency Dashboard")
 st.sidebar.header("Farm Data Inputs")
 
 # Enter the hectares of the farm
-hectares = st.sidebar.number_input("Enter the hectares of the farm:", min_value=0.1, value=1.0, format="%.2f")
+hectares = st.sidebar.number_input("Enter the hectares of the farm:", min_value=0.0, format="%.2f")
 
-# Enter actual water consumption for the farm (Current Baseline)
-actual_water = st.sidebar.number_input("Annual Water Consumption (Actual Use in kL):", min_value=0.0, value=0.0, format="%.2f")
+# Starting vs Current Water Consumption inputs
+starting_water = st.sidebar.number_input("Starting Water Consumption (Before Reduction in kL):", min_value=0.0, format="%.2f")
+current_water = st.sidebar.number_input("Current Water Consumption (After Reduction in kL):", min_value=0.0, format="%.2f")
 
 # Water Credit slider configuration
 st.sidebar.header("Water Credit Settings")
@@ -32,30 +33,24 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
         st.sidebar.warning("Large number entered. Displaying input fields for the first 50 crops.")
 
     crop_data = []
-    st.sidebar.subheader("Crop Details (Per Hectare)")
+    st.sidebar.subheader("Crop Details")
 
     for i in range(render_limit):
         crop_name = st.sidebar.text_input(f"Crop {i+1} Name", value=f"Crop {i+1}", key=f"name_{i}")
-        crop_water_per_ha = st.sidebar.number_input(f"Water requirement (kL/ha) for {crop_name}", min_value=0.0, key=f"water_{i}")
+        water_consumption = st.sidebar.number_input(f"Annual Water (kL) for {crop_name}", min_value=0.0, key=f"water_{i}")
         
-        crop_data.append({"Crop": crop_name, "Water Requirement (kL/ha)": crop_water_per_ha})
+        crop_data.append({"Crop": crop_name, "Water Consumption (kL)": water_consumption})
 
     # --- MAIN SCREEN OUTPUTS ---
     df = pd.DataFrame(crop_data)
     
-    # Calculate total water for each crop based on farm hectares (Crop Requirement x Farm Area)
-    df["Total Crop Water (kL)"] = df["Water Requirement (kL/ha)"] * hectares
-    
-    # Efficient baseline is the sum of all crop requirements multiplied by farm area
-    efficient_water = df["Total Crop Water (kL)"].sum()
-    
-    # Water-efficiency gap / Potential water saving (Current baseline - Efficient baseline)
-    water_saved_kl = max(0.0, actual_water - efficient_water)
+    # Calculations based on starting vs current water consumption
+    water_saved_kl = max(0.0, starting_water - current_water)
     water_saved_m3 = water_saved_kl  
     
-    # Percentage improvement / Water reduction % calculation relative to actual consumption
-    if actual_water > 0:
-        water_savings_pct = (water_saved_kl / actual_water) * 100
+    # Savings percentage based on where you started vs current
+    if starting_water > 0:
+        water_savings_pct = (water_saved_kl / starting_water) * 100
     else:
         water_savings_pct = 0.0
 
@@ -100,7 +95,7 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
         tier_2_mult = edited_tier_df.loc[edited_tier_df["Tier"] == "Tier 2", "Multiplier"].values[0]
         tier_3_mult = edited_tier_df.loc[edited_tier_df["Tier"] == "Tier 3", "Multiplier"].values[0]
 
-    # Determine active tier and multiplier based on water savings percentage (restricted to 3 tiers)
+    # Determine active tier and multiplier based on savings percentage
     if 0 <= water_savings_pct <= 20:
         current_tier = "Tier 1 (0-20%)"
         tier_multiplier = tier_1_mult
@@ -116,15 +111,14 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
     water_credits_value = water_credits * tier_multiplier
     
     with right_col:
-        st.markdown("### Total Water Consumption by Crop (kL)")
-        chart_df = df[["Crop", "Total Crop Water (kL)"]].set_index("Crop")
-        st.bar_chart(chart_df)
+        st.markdown("### Water Consumption by Crop")
+        st.bar_chart(df.set_index("Crop"))
 
     # Display key metrics across two rows above the tables for clear visibility
     row1_col1, row1_col2, row1_col3, row1_col4 = st.columns(4)
-    row1_col1.metric("Actual Water (Current)", f"{actual_water:,.2f} kL")
-    row1_col2.metric("Efficient Baseline", f"{efficient_water:,.2f} kL", help="Sum of crop requirements × farm hectares")
-    row1_col3.metric("Water Gap / Saved", f"{water_saved_kl:,.2f} kL")
+    row1_col1.metric("Starting Water", f"{starting_water:,.2f} kL")
+    row1_col2.metric("Current Water", f"{current_water:,.2f} kL")
+    row1_col3.metric("Water Saved (kL)", f"{water_saved_kl:,.2f} kL")
     row1_col4.metric("Water Saved (m³)", f"{water_saved_m3:,.2f} m³")
     
     row2_col1, row2_col2, row2_col3, row2_col4, row2_col5 = st.columns(5)
