@@ -41,7 +41,20 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
         
         crop_data.append({"Crop": crop_name, "Water Requirement (kL/ha)": crop_water_per_ha})
 
-    # --- MAIN SCREEN CALCULATIONS ---
+    # --- STATE INITIALIZATION FOR TIERS (Strictly 3 Tiers) ---
+    if "tier_df_state" not in st.session_state:
+        st.session_state.tier_df_state = pd.DataFrame([
+            {"Tier": "Tier 1", "Range": "0 - 20%", "Multiplier": 1.0},
+            {"Tier": "Tier 2", "Range": "21 - 40%", "Multiplier": 1.5},
+            {"Tier": "Tier 3", "Range": "41 - 60%", "Multiplier": 2.0},
+        ])
+
+    # Callback function to instantly sync edits from the bottom table
+    def update_multipliers():
+        if "tier_editor" in st.session_state:
+            st.session_state.tier_df_state = st.session_state.tier_editor
+
+    # --- CALCULATIONS ---
     df = pd.DataFrame(crop_data)
     
     # Calculate total efficient water requirement for reference
@@ -57,40 +70,12 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
     else:
         water_savings_pct = 0.0
 
-    # =========================================================================
-    # 1. RENDER & CAPTURE EDITABLE TIERS TABLE FIRST (Ensures Instant Reactivity)
-    # =========================================================================
-    if "tier_df_state" not in st.session_state:
-        st.session_state.tier_df_state = pd.DataFrame([
-            {"Tier": "Tier 1", "Range": "0 - 20%", "Multiplier": 1.0},
-            {"Tier": "Tier 2", "Range": "21 - 40%", "Multiplier": 1.5},
-            {"Tier": "Tier 3", "Range": "41 - 60%", "Multiplier": 2.0},
-        ])
+    # Extract current multipliers from state
+    tier_1_mult = st.session_state.tier_df_state.loc[st.session_state.tier_df_state["Tier"] == "Tier 1", "Multiplier"].values[0]
+    tier_2_mult = st.session_state.tier_df_state.loc[st.session_state.tier_df_state["Tier"] == "Tier 2", "Multiplier"].values[0]
+    tier_3_mult = st.session_state.tier_df_state.loc[st.session_state.tier_df_state["Tier"] == "Tier 3", "Multiplier"].values[0]
 
-    st.subheader("⚙️ Efficiency Tiers (Editable Multipliers)")
-    edited_tier_df = st.data_editor(
-        st.session_state.tier_df_state,
-        column_config={
-            "Multiplier": st.column_config.NumberColumn(
-                "Multiplier",
-                min_value=1.0,
-                max_value=2.5,
-                step=0.1,
-                format="%.1f"
-            )
-        },
-        disabled=["Tier", "Range"],
-        use_container_width=True,
-        key="tier_editor"
-    )
-    st.session_state.tier_df_state = edited_tier_df
-
-    # Extract multipliers instantly from the user-edited table
-    tier_1_mult = edited_tier_df.loc[edited_tier_df["Tier"] == "Tier 1", "Multiplier"].values[0]
-    tier_2_mult = edited_tier_df.loc[edited_tier_df["Tier"] == "Tier 2", "Multiplier"].values[0]
-    tier_3_mult = edited_tier_df.loc[edited_tier_df["Tier"] == "Tier 3", "Multiplier"].values[0]
-
-    # Determine active tier and multiplier based on strict 3-tier structure
+    # Determine active tier and multiplier (3 tiers only)
     if 0 <= water_savings_pct <= 20:
         current_tier = "Tier 1 (0-20%)"
         tier_multiplier = tier_1_mult
@@ -101,14 +86,12 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
         current_tier = "Tier 3 (41-60%)"
         tier_multiplier = tier_3_mult
 
-    # Calculate financial values using the freshly extracted multipliers
+    # Calculate financial values
     water_credits = water_saved_m3 / water_credit_value if water_credit_value > 0 else 0.0
     water_credits_value = water_credits * tier_multiplier
 
-    st.write("---")
-
     # =========================================================================
-    # 2. VISUAL ROW: PROGRESS BAR & WATER REDUCTION OVERVIEW ALONGSIDE CHART
+    # VISUAL ROW 1: PROGRESS BAR & WATER REDUCTION OVERVIEW ALONGSIDE CHART
     # =========================================================================
     st.subheader("🎯 Visual Water Savings Progress")
     
@@ -136,7 +119,7 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
     st.write("---")
 
     # =========================================================================
-    # 3. FINANCIAL REWARDS & ACTIVE TIERS (Updates instantly on table edit)
+    # ROW 2: FINANCIAL REWARDS & ACTIVE TIERS
     # =========================================================================
     st.subheader("💰 Financial Rewards & Active Tiers")
     
@@ -151,10 +134,35 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
     st.write("---")
 
     # =========================================================================
-    # 4. CROP DATA TABLE
+    # ROW 3: CROP DATA TABLE
     # =========================================================================
     st.subheader("📋 Crop Data Table")
     st.dataframe(df, use_container_width=True)
+
+    st.write("---")
+
+    # =========================================================================
+    # ROW 4: EFFICIENCY TIERS TABLE PLACED AT THE VERY BOTTOM
+    # =========================================================================
+    st.subheader("⚙️ Efficiency Tiers (Editable Multipliers)")
+    st.markdown("*(Scroll down here anytime you want to customize your tier multiplier values)*")
+    
+    edited_tier_df = st.data_editor(
+        st.session_state.tier_df_state,
+        column_config={
+            "Multiplier": st.column_config.NumberColumn(
+                "Multiplier",
+                min_value=1.0,
+                max_value=2.5,
+                step=0.1,
+                format="%.1f"
+            )
+        },
+        disabled=["Tier", "Range"],
+        use_container_width=True,
+        key="tier_editor",
+        on_change=update_multipliers
+    )
 
     st.write("---")
     st.write(f"**Farm Size:** {hectares} hectares &nbsp;&nbsp;|&nbsp;&nbsp; **Total Crops Managed:** {num_crops}")
