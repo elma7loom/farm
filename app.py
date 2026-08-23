@@ -41,7 +41,7 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
         
         crop_data.append({"Crop": crop_name, "Water Requirement (kL/ha)": crop_water_per_ha})
 
-    # --- STATE INITIALIZATION & CALLBACK FOR INSTANT SYNC ---
+    # --- STATE INITIALIZATION FOR TIERS ---
     if "tier_df" not in st.session_state:
         st.session_state.tier_df = pd.DataFrame([
             {"Tier": "Tier 1", "Range": "0 - 20%", "Multiplier": 1.0},
@@ -49,9 +49,8 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
             {"Tier": "Tier 3", "Range": "41 - 60%", "Multiplier": 2.0},
         ])
 
-    def update_tiers():
-        if "tier_editor" in st.session_state:
-            st.session_state.tier_df = st.session_state.tier_editor
+    # Grab the active tier data instantly from the editor state if available
+    active_tier_df = st.session_state.get("tier_editor", st.session_state.tier_df)
 
     # --- CALCULATIONS ---
     df = pd.DataFrame(crop_data)
@@ -69,18 +68,13 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
     else:
         water_savings_pct = 0.0
 
-    # Safe multiplier extraction helper to prevent any AttributeError crash
-    def get_mult(tier_name, default_val):
-        try:
-            tdf = st.session_state.tier_df
-            val = tdf.loc[tdf["Tier"] == tier_name, "Multiplier"].values[0]
-            return float(val) if pd.notna(val) else default_val
-        except Exception:
-            return default_val
-
-    tier_1_mult = get_mult("Tier 1", 1.0)
-    tier_2_mult = get_mult("Tier 2", 1.5)
-    tier_3_mult = get_mult("Tier 3", 2.0)
+    # Extract multipliers safely from active_tier_df
+    try:
+        tier_1_mult = float(active_tier_df.loc[active_tier_df["Tier"] == "Tier 1", "Multiplier"].values[0])
+        tier_2_mult = float(active_tier_df.loc[active_tier_df["Tier"] == "Tier 2", "Multiplier"].values[0])
+        tier_3_mult = float(active_tier_df.loc[active_tier_df["Tier"] == "Tier 3", "Multiplier"].values[0])
+    except Exception:
+        tier_1_mult, tier_2_mult, tier_3_mult = 1.0, 1.5, 2.0
 
     # Determine active tier and multiplier (3 tiers only)
     if 0 <= water_savings_pct <= 20:
@@ -154,7 +148,7 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
     st.subheader("⚙️ Efficiency Tiers (Editable Multipliers)")
     st.markdown("*(Scroll down here anytime you want to customize your tier multiplier values)*")
     
-    st.data_editor(
+    edited_df = st.data_editor(
         st.session_state.tier_df,
         column_config={
             "Multiplier": st.column_config.NumberColumn(
@@ -167,9 +161,9 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
         },
         disabled=["Tier", "Range"],
         use_container_width=True,
-        key="tier_editor",
-        on_change=update_tiers
+        key="tier_editor"
     )
+    st.session_state.tier_df = edited_df
 
     st.write("---")
     st.write(f"**Farm Size:** {hectares} hectares &nbsp;&nbsp;|&nbsp;&nbsp; **Total Crops Managed:** {num_crops}")
