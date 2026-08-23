@@ -43,18 +43,18 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
     # --- MAIN SCREEN OUTPUTS ---
     df = pd.DataFrame(crop_data)
     
-    # Efficient water consumption is the sum of all crop water consumptions
+    # Efficient water consumption is the sum of all crop water consumptions (baseline)
     efficient_water = df["Water Consumption (kL)"].sum()
     
-    # Water efficiency gap calculations (Note: 1 kL = 1 m³)
-    water_efficiency_gap_kl = actual_water - efficient_water
-    water_efficiency_gap_m3 = water_efficiency_gap_kl  
+    # Water savings calculations (Savings occur if actual consumption is less than efficient baseline)
+    water_saved_kl = max(0.0, efficient_water - actual_water)
+    water_saved_m3 = water_saved_kl  
     
-    # Water efficiency gap percentage calculation (guarding against division by zero)
+    # Water savings percentage calculation (guarding against division by zero)
     if efficient_water > 0:
-        water_efficiency_gap_pct = (water_efficiency_gap_kl / efficient_water) * 100
+        water_savings_pct = (water_saved_kl / efficient_water) * 100
     else:
-        water_efficiency_gap_pct = 0.0
+        water_savings_pct = 0.0
 
     st.subheader("📊 Summary & Water Efficiency Analysis")
     
@@ -99,22 +99,22 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
         tier_3_mult = edited_tier_df.loc[edited_tier_df["Tier"] == "Tier 3", "Multiplier"].values[0]
         tier_4_mult = edited_tier_df.loc[edited_tier_df["Tier"] == "Tier 4", "Multiplier"].values[0]
 
-    # Determine active tier and multiplier based on efficiency gap percentage
-    if 0 <= water_efficiency_gap_pct <= 20:
+    # Determine active tier and multiplier based on water savings percentage
+    if 0 <= water_savings_pct <= 20:
         current_tier = "Tier 1 (0-20%)"
         tier_multiplier = tier_1_mult
-    elif 20 < water_efficiency_gap_pct <= 40:
+    elif 20 < water_savings_pct <= 40:
         current_tier = "Tier 2 (21-40%)"
         tier_multiplier = tier_2_mult
-    elif 40 < water_efficiency_gap_pct <= 60:
+    elif 40 < water_savings_pct <= 60:
         current_tier = "Tier 3 (41-60%)"
         tier_multiplier = tier_3_mult
     else:
         current_tier = "Tier 4 (61%+)"
         tier_multiplier = tier_4_mult
 
-    # Calculate base water credits and water credits value
-    water_credits = water_efficiency_gap_m3 / water_credit_value if water_credit_value > 0 else 0.0
+    # Calculate base water credits and monetary value in AED
+    water_credits = water_saved_m3 / water_credit_value if water_credit_value > 0 else 0.0
     water_credits_value = water_credits * tier_multiplier
     
     with right_col:
@@ -125,15 +125,15 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
     row1_col1, row1_col2, row1_col3, row1_col4 = st.columns(4)
     row1_col1.metric("Actual Water", f"{actual_water:,.2f} kL")
     row1_col2.metric("Efficient Water", f"{efficient_water:,.2f} kL")
-    row1_col3.metric("Gap (kL)", f"{water_efficiency_gap_kl:,.2f} kL")
-    row1_col4.metric("Gap (m³)", f"{water_efficiency_gap_m3:,.2f} m³")
+    row1_col3.metric("Water Saved (kL)", f"{water_saved_kl:,.2f} kL")
+    row1_col4.metric("Water Saved (m³)", f"{water_saved_m3:,.2f} m³")
     
     row2_col1, row2_col2, row2_col3, row2_col4, row2_col5 = st.columns(5)
-    row2_col1.metric("Gap %", f"{water_efficiency_gap_pct:,.2f}%")
+    row2_col1.metric("Savings %", f"{water_savings_pct:,.2f}%")
     row2_col2.metric("Active Tier", current_tier)
     row2_col3.metric("Tier Multiplier", f"{tier_multiplier}x")
     row2_col4.metric("Water Credits", f"{water_credits:,.2f}")
-    row2_col5.metric("Credits Value", f"{water_credits_value:,.2f}", help="Amount of water credits multiplied by the active tier multiplier")
+    row2_col5.metric("Credits Value", f"AED {water_credits_value:,.2f}", help="Water credits multiplied by the active tier multiplier")
     
     st.write(f"**Farm Size:** {hectares} hectares &nbsp;&nbsp;|&nbsp;&nbsp; **Total Crops:** {num_crops}")
     st.write("---")
