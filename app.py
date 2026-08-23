@@ -5,7 +5,9 @@ st.set_page_config(page_title="Water Credit Farm Simulator", layout="wide")
 
 st.title("🌾 Interactive Water Credit Farm Simulator")
 st.markdown(
-    "Designed for Judges & Investors: Test how farm size, crop selection, and water-saving tiers impact water credits and financial revenue (**3.13 AED per credit**), ensuring smallholders are fully protected."
+    "Designed for Judges & Investors: Adjust the **Farm Area** slider. If it is"
+    " **3.5 hectares or below**, the smallholder bonus applies automatically to"
+    " protect small farms!"
 )
 
 # Sidebar / Input Section
@@ -30,16 +32,15 @@ base_water_rate = st.sidebar.number_input(
     max_value=50000,
     value=default_water,
     step=500,
-    help="Annual water usage per hectare for the chosen crop.",
 )
 
 farm_area = st.sidebar.slider(
     "Farm Area (Hectares)",
-    min_value=1.0,
-    max_value=150.0,
-    value=5.0,
-    step=1.0,
-    help="Total land area of the example farm.",
+    min_value=0.5,
+    max_value=50.0,
+    value=3.0,
+    step=0.5,
+    help="Adjust the size of your single example farm.",
 )
 
 water_saved_pct = st.sidebar.slider(
@@ -48,21 +49,14 @@ water_saved_pct = st.sidebar.slider(
     max_value=20.0,
     value=12.0,
     step=0.5,
-    help="Percentage reduction in water use compared to the regional baseline.",
 )
 
 st.sidebar.markdown("---")
-st.sidebar.subheader("🛡️ Small Farm Protection Settings")
-small_farm_threshold = st.sidebar.slider(
-    "Small Farm Threshold (Hectares)",
-    min_value=2.0,
-    max_value=20.0,
-    value=10.0,
-    step=1.0,
-    help="Farms at or below this size are classified as smallholders.",
-)
+st.sidebar.subheader("🛡️ Small Farm Protection")
 
-is_small_farm = farm_area <= small_farm_threshold
+# Fixed threshold at 3.5 hectares as requested
+SMALL_FARM_LIMIT = 3.5
+is_small_farm = farm_area <= SMALL_FARM_LIMIT
 
 small_farm_multiplier = st.sidebar.slider(
     "Smallholder Bonus Multiplier",
@@ -70,7 +64,9 @@ small_farm_multiplier = st.sidebar.slider(
     max_value=3.0,
     value=1.5,
     step=0.1,
-    help="Bonus multiplier applied to small farms to ensure equitable earnings.",
+    help=(
+        "Extra multiplier added automatically if the farm is 3.5 ha or below."
+    ),
 )
 
 # --- Calculations ---
@@ -91,10 +87,10 @@ else:
   tier_name = "Tier 4 (15-20%)"
   tier_multiplier = 2.0
 
-# Credits calculation (1 credit per 10 m³ saved, modified by tier)
+# Credits calculation
 base_credits = water_saved_m3 / 10.0 * tier_multiplier
 
-# Apply small farm multiplier if eligible
+# Apply small farm multiplier automatically if <= 3.5 ha
 final_multiplier = small_farm_multiplier if is_small_farm else 1.0
 total_credits = base_credits * final_multiplier
 
@@ -125,19 +121,18 @@ with c1:
   st.subheader("📊 Farm Status & Equity Check")
   if is_small_farm:
     st.success(
-        f"🛡️ **Small Farm Status ACTIVE**: This farm is **{farm_area} ha**"
-        f" (below the {small_farm_threshold} ha threshold). It benefits from the"
-        f" **{small_farm_multiplier}x** smallholder bonus multiplier to level"
-        " the playing field against enterprise farms!"
+        f"🛡️ **Small Farm Protection ACTIVE**: This farm is **{farm_area} ha**"
+        f" (which is <= {SMALL_FARM_LIMIT} ha). The"
+        f" **{small_farm_multiplier}x** smallholder bonus is automatically"
+        " applied!"
     )
   else:
     st.info(
         f"🏢 **Enterprise Farm Status**: This farm is **{farm_area} ha** (above"
-        f" the {small_farm_threshold} ha threshold). Standard tier multipliers"
-        " apply without the smallholder bonus."
+        f" the {SMALL_FARM_LIMIT} ha smallholder cutoff). Standard rates"
+        " apply."
     )
 
-  # Display breakdown table
   breakdown_df = pd.DataFrame({
       "Metric": [
           "Farm Size",
@@ -145,7 +140,7 @@ with c1:
           "Baseline Water Use",
           "Water Saved",
           "Tier Multiplier",
-          "Smallholder Bonus",
+          "Smallholder Bonus Applied",
           "Total Revenue",
       ],
       "Value": [
@@ -181,11 +176,3 @@ with c2:
       {"Water Saved (%)": percentages, "Revenue (AED)": revenues}
   )
   st.line_chart(chart_df.set_index("Water Saved (%)"))
-
-st.markdown("---")
-st.markdown("### 💡 Why this appeals to Judges & Investors:")
-st.markdown("""
-* **Fairness & Equity:** Visually proves small farms aren't priced out via the smallholder bonus multiplier.
-* **Transparent Economics:** Direct mapping to local currency (**3.13 AED** per credit).
-* **Behavioral Incentive:** Stepped tiers encourage higher efficiency savings up to the 20% cap.
-""")
