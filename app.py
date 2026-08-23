@@ -67,15 +67,19 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
     if 0 <= water_efficiency_gap_pct <= 20:
         current_tier = "Tier 1 (0-20%)"
         tier_multiplier = tier_1_mult
+        active_tier_num = 1
     elif 20 < water_efficiency_gap_pct <= 40:
         current_tier = "Tier 2 (21-40%)"
         tier_multiplier = tier_2_mult
+        active_tier_num = 2
     elif 40 < water_efficiency_gap_pct <= 60:
         current_tier = "Tier 3 (41-60%)"
         tier_multiplier = tier_3_mult
+        active_tier_num = 3
     else:
         current_tier = "Tier 4 (61%+)"
         tier_multiplier = tier_4_mult
+        active_tier_num = 4
 
     # Calculate final water credits using the base value and active tier multiplier
     base_water_credits = water_efficiency_gap_m3 / water_credit_value if water_credit_value > 0 else 0.0
@@ -99,14 +103,24 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
     st.write(f"**Farm Size:** {hectares} hectares &nbsp;&nbsp;|&nbsp;&nbsp; **Total Crops:** {num_crops}")
     st.write("---")
 
-    # Display data table and bar chart side-by-side on the main screen
-    table_col, chart_col = st.columns(2)
+    # Display tables and bar chart cleanly on the main screen
+    left_col, right_col = st.columns(2)
     
-    with table_col:
+    with left_col:
         st.markdown("### Crop Data Table")
         st.dataframe(df, use_container_width=True)
         
-    with chart_col:
+        st.markdown("### Efficiency Tiers Breakdown")
+        tier_summary_data = [
+            {"Tier": "Tier 1", "Range": "0 - 20%", "Multiplier": f"{tier_1_mult}x", "Status": "Active" if active_tier_num == 1 else "-"},
+            {"Tier": "Tier 2", "Range": "21 - 40%", "Multiplier": f"{tier_2_mult}x", "Status": "Active" if active_tier_num == 2 else "-"},
+            {"Tier": "Tier 3", "Range": "41 - 60%", "Multiplier": f"{tier_3_mult}x", "Status": "Active" if active_tier_num == 3 else "-"},
+            {"Tier": "Tier 4", "Range": "61%+", "Multiplier": f"{tier_4_mult}x", "Status": "Active" if active_tier_num == 4 else "-"},
+        ]
+        tier_df = pd.DataFrame(tier_summary_data)
+        st.dataframe(tier_df, use_container_width=True)
+        
+    with right_col:
         st.markdown("### Water Consumption by Crop")
         st.bar_chart(df.set_index("Crop"))
 
