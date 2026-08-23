@@ -1,10 +1,13 @@
 import streamlit as st
 import pandas as pd
 
-st.title("Farm Data Visualization")
+st.title("Farm Data Visualization & Water Efficiency")
 
 # Enter the hectares of the farm
 hectares = st.number_input("Enter the hectares of the farm:", min_value=0.0, format="%.2f")
+
+# Enter actual water consumption for the farm
+actual_water = st.number_input("Enter actual water consumption for the farm (kL):", min_value=0.0, format="%.2f")
 
 # Blank for amount of crops grown (accepts 1-15 digits)
 num_crops_input = st.text_input("Enter the amount of crops grown (1-15 digits):", value="1")
@@ -33,8 +36,21 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
     if st.button("Visualize Data"):
         df = pd.DataFrame(crop_data)
         
+        # Efficient water consumption is the sum of all crop water consumptions
+        efficient_water = df["Water Consumption (kL)"].sum()
+        
+        # Water efficiency gap calculation
+        water_efficiency_gap = actual_water - efficient_water
+        
         st.write("---")
-        st.subheader("Summary")
+        st.subheader("Summary & Water Efficiency Analysis")
+        
+        # Display key metrics using Streamlit metrics
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Actual Water", f"{actual_water:,.2f} kL")
+        col2.metric("Efficient Water", f"{efficient_water:,.2f} kL")
+        col3.metric("Efficiency Gap", f"{water_efficiency_gap:,.2f} kL")
+        
         st.write(f"**Farm Size:** {hectares} hectares")
         st.write(f"**Total Crops:** {num_crops}")
         
