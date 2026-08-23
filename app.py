@@ -38,7 +38,7 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
         
         crop_data.append({"Crop": crop_name, "Water Consumption (kL)": crop_water})
 
-    # --- STATE INITIALIZATION FOR TIERS (Placed First) ---
+    # --- STATE INITIALIZATION FOR TIERS ---
     if "tier_df" not in st.session_state:
         st.session_state.tier_df = pd.DataFrame([
             {"Tier": "Tier 1", "Range": "0 - 20%", "Multiplier": 1.0},
@@ -46,8 +46,10 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
             {"Tier": "Tier 3", "Range": "41 - 60%", "Multiplier": 2.0},
         ])
 
+    df = pd.DataFrame(crop_data)
+
     # =========================================================================
-    # ROW 1: EFFICIENCY TIERS TABLE (FIRST) & CROP CHART
+    # ROW 1: COMPACT EFFICIENCY TIERS TABLE (ON THE SIDE) & CROP CHART
     # =========================================================================
     st.subheader("📊 Overview & Multiplier Settings")
     
@@ -55,8 +57,8 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
     
     with col_left:
         st.markdown("**⚙️ Efficiency Tiers (Editable)**")
-        # Render table first so edits are captured instantly before calculations run
-        edited_df = st.data_editor(
+        # Clean assignment without key conflicts to avoid pandas boolean errors
+        st.session_state.tier_df = st.data_editor(
             st.session_state.tier_df,
             column_config={
                 "Multiplier": st.column_config.NumberColumn(
@@ -69,13 +71,9 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
             },
             disabled=["Tier", "Range"],
             use_container_width=True,
-            height=170,
-            key="tier_editor"
+            height=170
         )
-        st.session_state.tier_df = edited_df
 
-    df = pd.DataFrame(crop_data)
-    
     with col_right:
         st.markdown("**📉 Water Consumption by Crop**")
         chart_df = df.set_index("Crop")
@@ -98,9 +96,9 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
     # Extract multipliers safely from the updated session state table
     active_tier_df = st.session_state.tier_df
     try:
-        tier_1_mult = float(active_tier_df.loc[active_tier_df["Tier"] == "Tier 1", "Multiplier"].values[0])
-        tier_2_mult = float(active_tier_df.loc[active_tier_df["Tier"] == "Tier 2", "Multiplier"].values[0])
-        tier_3_mult = float(active_tier_df.loc[active_tier_df["Tier"] == "Tier 3", "Multiplier"].values[0])
+        tier_1_mult = float(active_tier_df.loc[active_tier_df["Tier"] == "Tier 1", "Multiplier"].iloc[0])
+        tier_2_mult = float(active_tier_df.loc[active_tier_df["Tier"] == "Tier 2", "Multiplier"].iloc[0])
+        tier_3_mult = float(active_tier_df.loc[active_tier_df["Tier"] == "Tier 3", "Multiplier"].iloc[0])
     except Exception:
         tier_1_mult, tier_2_mult, tier_3_mult = 1.0, 1.5, 2.0
 
