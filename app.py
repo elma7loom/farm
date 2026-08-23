@@ -44,11 +44,11 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
     # --- MAIN SCREEN CALCULATIONS ---
     df = pd.DataFrame(crop_data)
     
-    # Calculate total efficient water requirement for each crop based on farm hectares
+    # Calculate total efficient water requirement for reference
     df["Total Efficient Water (kL)"] = df["Water Requirement (kL/ha)"] * hectares
     efficient_baseline = df["Total Efficient Water (kL)"].sum()
     
-    # Calculations based on starting vs current water consumption
+    # Savings calculations (Starting vs Current)
     water_saved_kl = max(0.0, starting_water - current_water)
     water_saved_m3 = water_saved_kl  
     
@@ -65,12 +65,12 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
             {"Tier": "Tier 3", "Range": "41 - 60%", "Multiplier": 2.0},
         ])
 
-    # Extract multipliers early so metrics can use them at the top
+    # Extract multipliers
     tier_1_mult = st.session_state.tier_df_state.loc[st.session_state.tier_df_state["Tier"] == "Tier 1", "Multiplier"].values[0]
     tier_2_mult = st.session_state.tier_df_state.loc[st.session_state.tier_df_state["Tier"] == "Tier 2", "Multiplier"].values[0]
     tier_3_mult = st.session_state.tier_df_state.loc[st.session_state.tier_df_state["Tier"] == "Tier 3", "Multiplier"].values[0]
 
-    # Determine active tier and multiplier based on savings percentage
+    # Determine active tier and multiplier
     if 0 <= water_savings_pct <= 20:
         current_tier = "Tier 1 (0-20%)"
         tier_multiplier = tier_1_mult
@@ -81,43 +81,55 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
         current_tier = "Tier 3 (41-60%)"
         tier_multiplier = tier_3_mult
 
-    # Calculate final values
+    # Calculate financial values
     water_credits = water_saved_m3 / water_credit_value if water_credit_value > 0 else 0.0
     water_credits_value = water_credits * tier_multiplier
 
-    # ==========================================
-    # VISUAL LAYOUT: HIGHLIGHTS AT THE VERY TOP
-    # ==========================================
-    st.subheader("🌟 Executive Summary & Financial Rewards")
+    # =========================================================================
+    # TOP ROW: NOTICEABLE SAVINGS METRICS ALONGSIDE THE CHART (NO SCROLLING)
+    # =========================================================================
+    st.subheader("🎯 Water Savings & Performance Overview")
     
-    top_col1, top_col2, top_col3, top_col4 = st.columns(4)
-    top_col1.metric("💰 Credits Value", f"AED {water_credits_value:,.2f}", help="Total monetary value based on credits and tier multiplier")
-    top_col2.metric("📈 Savings %", f"{water_savings_pct:,.2f}%")
-    top_col3.metric("🏆 Active Tier", current_tier)
-    top_col4.metric("⚡ Tier Multiplier", f"{tier_multiplier}x")
+    top_col1, top_col2 = st.columns([1, 1])
+    
+    with top_col1:
+        # High-impact callouts for savings
+        m_col1, m_col2 = st.columns(2)
+        m_col1.metric("📈 Savings %", f"{water_savings_pct:,.2f}%", help="Calculated from Starting vs Current water use")
+        m_col2.metric("💧 Water Saved", f"{water_saved_kl:,.2f} kL")
+        
+        # Supporting baseline info
+        sub_col1, sub_col2, sub_col3 = st.columns(3)
+        sub_col1.metric("Starting", f"{starting_water:,.2f} kL")
+        sub_col2.metric("Current", f"{current_water:,.2f} kL")
+        sub_col3.metric("Efficient Target", f"{efficient_baseline:,.2f} kL", help="Requirement × Hectares (Reference)")
+
+    with top_col2:
+        st.markdown("**Efficient Water Requirement by Crop**")
+        chart_df = df[["Crop", "Total Efficient Water (kL)"]].set_index("Crop")
+        st.bar_chart(chart_df, height=220)
 
     st.write("---")
 
-    # Detailed Water Metrics Row
-    st.subheader("📊 Water Balance Breakdown")
-    mid_col1, mid_col2, mid_col3, mid_col4, mid_col5 = st.columns(5)
-    mid_col1.metric("Starting Water", f"{starting_water:,.2f} kL")
-    mid_col2.metric("Current Water", f"{current_water:,.2f} kL")
-    mid_col3.metric("Water Saved", f"{water_saved_kl:,.2f} kL")
-    mid_col4.metric("Water Credits", f"{water_credits:,.2f}")
-    mid_col5.metric("Efficient Baseline", f"{efficient_baseline:,.2f} kL", help="Target benchmark (Requirement × Hectares)")
-
-    st.write("---")
-
-    # ==========================================
-    # SIDE-BY-SIDE TABLES & CHARTS
-    # ==========================================
-    left_col, right_col = st.columns(2)
+    # =========================================================================
+    # SECOND ROW: MONEY & REWARDS GROUPED WITH TIERS TABLE
+    # =========================================================================
+    st.subheader("💰 Financial Rewards & Tiers")
     
-    with left_col:
+    money_col1, money_col2 = st.columns([1, 1])
+    
+    with money_col1:
+        # Grouped money metrics
+        fin_col1, fin_col2, fin_col3, fin_col4 = st.columns(4)
+        fin_col1.metric("🏆 Active Tier", current_tier)
+        fin_col2.metric("⚡ Multiplier", f"{tier_multiplier}x")
+        fin_col3.metric("Water Credits", f"{water_credits:,.2f}")
+        fin_col4.metric("Credits Value", f"AED {water_credits_value:,.2f}")
+
         st.markdown("### 📋 Crop Data Table")
         st.dataframe(df, use_container_width=True)
-        
+
+    with money_col2:
         st.markdown("### ⚙️ Efficiency Tiers (Editable Multipliers)")
         edited_tier_df = st.data_editor(
             st.session_state.tier_df_state,
@@ -134,13 +146,7 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
             use_container_width=True,
             key="tier_editor"
         )
-        # Update session state with edited values
         st.session_state.tier_df_state = edited_tier_df
-
-    with right_col:
-        st.markdown("### 📉 Efficient Water Requirement by Crop")
-        chart_df = df[["Crop", "Total Efficient Water (kL)"]].set_index("Crop")
-        st.bar_chart(chart_df)
 
     st.write("---")
     st.write(f"**Farm Size:** {hectares} hectares &nbsp;&nbsp;|&nbsp;&nbsp; **Total Crops Managed:** {num_crops}")
