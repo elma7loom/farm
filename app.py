@@ -25,10 +25,11 @@ selected_crop = st.sidebar.selectbox(
 )
 default_water = crop_defaults[selected_crop]
 
+# Expanded max_value to 500,000 to allow high water volume inputs
 base_water_rate = st.sidebar.number_input(
     "Base Annual Water Consumption (m³ per hectare)",
     min_value=1000,
-    max_value=50000,
+    max_value=500000,
     value=default_water,
     step=500,
 )
@@ -112,8 +113,10 @@ st.success(
     f"## 💰 Total Farmer Take-Home: **{total_revenue_aed:,.2f} AED**\n\n"
     f"**How the final payout is calculated:**\n"
     f"1. **Base Credits:** {base_credits:,.1f} WC (Based on water saved & tier)\n"
-    f"2. **Small Farm Bonus:** × {final_multiplier} Multiplier ➔ **{total_credits:,.1f} Final WC**\n"
-    f"3. **Cash Conversion:** {total_credits:,.1f} WC × 3.13 AED = **{total_revenue_aed:,.2f} AED**"
+    f"2. **Small Farm Bonus:** × {final_multiplier} Multiplier ➔"
+    f" **{total_credits:,.1f} Final WC**\n"
+    f"3. **Cash Conversion:** {total_credits:,.1f} WC × 3.13 AED ="
+    f" **{total_revenue_aed:,.2f} AED**"
 )
 
 st.markdown("---")
