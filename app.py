@@ -33,30 +33,37 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
         
         crop_data.append({"Crop": crop_name, "Water Consumption (kL)": water_consumption})
 
-    if st.button("Visualize Data"):
-        df = pd.DataFrame(crop_data)
-        
-        # Efficient water consumption is the sum of all crop water consumptions
-        efficient_water = df["Water Consumption (kL)"].sum()
-        
-        # Water efficiency gap calculation
-        water_efficiency_gap = actual_water - efficient_water
-        
-        st.write("---")
-        st.subheader("Summary & Water Efficiency Analysis")
-        
-        # Display key metrics using Streamlit metrics
-        col1, col2, col3 = st.columns(3)
-        col1.metric("Actual Water", f"{actual_water:,.2f} kL")
-        col2.metric("Efficient Water", f"{efficient_water:,.2f} kL")
-        col3.metric("Efficiency Gap", f"{water_efficiency_gap:,.2f} kL")
-        
-        st.write(f"**Farm Size:** {hectares} hectares")
-        st.write(f"**Total Crops:** {num_crops}")
-        
-        # Display data table and bar chart
-        st.dataframe(df)
-        st.bar_chart(df.set_index("Crop"))
+    # Data visualization updates automatically without a button
+    df = pd.DataFrame(crop_data)
+    
+    # Efficient water consumption is the sum of all crop water consumptions
+    efficient_water = df["Water Consumption (kL)"].sum()
+    
+    # Water efficiency gap calculation
+    water_efficiency_gap = actual_water - efficient_water
+    
+    # Water efficiency gap percentage calculation (guarding against division by zero)
+    if efficient_water > 0:
+        water_efficiency_gap_pct = (water_efficiency_gap / efficient_water) * 100
+    else:
+        water_efficiency_gap_pct = 0.0
+    
+    st.write("---")
+    st.subheader("Summary & Water Efficiency Analysis")
+    
+    # Display key metrics using Streamlit metrics across 4 columns
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric("Actual Water", f"{actual_water:,.2f} kL")
+    col2.metric("Efficient Water", f"{efficient_water:,.2f} kL")
+    col3.metric("Efficiency Gap", f"{water_efficiency_gap:,.2f} kL")
+    col4.metric("Gap %", f"{water_efficiency_gap_pct:,.2f}%")
+    
+    st.write(f"**Farm Size:** {hectares} hectares")
+    st.write(f"**Total Crops:** {num_crops}")
+    
+    # Display data table and bar chart
+    st.dataframe(df)
+    st.bar_chart(df.set_index("Crop"))
 
 else:
     st.error("Please enter a valid number containing between 1 and 15 digits.")
