@@ -1,247 +1,46 @@
-import pandas as pd
 import streamlit as st
+import pandas as pd
 
-st.set_page_config(
-    page_title="Water Credit Farm Simulator",
-    layout="wide",
-    initial_sidebar_state="expanded",
-)
+st.title("Farm Data Visualization")
 
-# --- WARM MINIMALIST CUSTOM CSS STYLING ---
-st.markdown(
-    """
-    <style>
-    .stApp {
-        background-color: #FDFBF7;
-        color: #2D2D2D;
-    }
-    [data-testid="stSidebar"] {
-        background-color: #F4EFE6;
-        color: #2D2D2D;
-    }
-    h1, h2, h3, h4, h5, h6, p, span, label, div {
-        color: #2D2D2D !important;
-    }
-    [data-testid="stMetricValue"] {
-        color: #D97757 !important;
-    }
-    [data-testid="stMetricLabel"] {
-        color: #2D2D2D !important;
-    }
-    .stSuccess {
-        background-color: #E6EFEA !important;
-        border-color: #87A99A !important;
-        color: #2D2D2D !important;
-    }
-    .stInfo {
-        background-color: #F7EBE8 !important;
-        border-color: #D97757 !important;
-        color: #2D2D2D !important;
-    }
-    table {
-        color: #2D2D2D !important;
-        background-color: #FDFBF7 !important;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
+# Enter the hectares of the farm
+hectares = st.number_input("Enter the hectares of the farm:", min_value=0.0, format="%.2f")
 
-st.title("🌾 Interactive Water Credit Farm Simulator")
-st.markdown(
-    "Designed for Judges & Investors: Configure your farm layout, name custom"
-    " crops, and simulate water savings and financial payouts in real-time."
-)
+# Blank for amount of crops grown (accepts 1-15 digits)
+num_crops_input = st.text_input("Enter the amount of crops grown (1-15 digits):", value="1")
 
-# Sidebar / Input Section
-st.sidebar.header("🎛️ Simulation Controls")
+# Validate the 1-15 digits constraint
+if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
+    num_crops = int(num_crops_input)
+    
+    # Limit UI rendering loop for practicality if the number is excessively large
+    render_limit = min(num_crops, 50)
+    if num_crops > 50:
+        st.warning("Large number entered. Displaying input fields for the first 50 crops.")
 
-crop_defaults = {
-    "Palm Tree": 22000,
-    "Cherry Tomato": 9000,
-    "Potato": 6500,
-    "Wheat": 4500,
-    "Custom Crop": 10000,
-}
+    crop_data = []
+    st.subheader("Crop Water Consumption Details")
 
-# How many crops grown
-num_crops = st.sidebar.selectbox(
-    "3. How many crops grown?", [1, 2, 3], index=1
-)
+    for i in range(render_limit):
+        col1, col2 = st.columns(2)
+        with col1:
+            crop_name = st.text_input(f"Crop {i+1} Name", value=f"Crop {i+1}", key=f"name_{i}")
+        with col2:
+            water_consumption = st.number_input(f"Annual Water Consumption (kL) for {crop_name}", min_value=0.0, key=f"water_{i}")
+        
+        crop_data.append({"Crop": crop_name, "Water Consumption (kL)": water_consumption})
 
-st.sidebar.markdown("---")
-st.sidebar.subheader("🌱 Crop Types & Water Consumption")
+    if st.button("Visualize Data"):
+        df = pd.DataFrame(crop_data)
+        
+        st.write("---")
+        st.subheader("Summary")
+        st.write(f"**Farm Size:** {hectares} hectares")
+        st.write(f"**Total Crops:** {num_crops}")
+        
+        # Display data table and bar chart
+        st.dataframe(df)
+        st.bar_chart(df.set_index("Crop"))
 
-crop_data_list = []
-total_farm_area = 0
-total_baseline_water = 0
-
-for i in range(num_crops):
-  st.sidebar.markdown(f"**Crop #{i+1} Configuration**")
-
-  # Types of crops grown
-  c_type = st.sidebar.selectbox(
-      f"4. Type of Crop #{i+1}", list(crop_defaults.keys()), key=f"crop_{i}"
-  )
-
-  # Custom crop name input if selected
-  if c_type == "Custom Crop":
-    custom_name = st.sidebar.text_input(
-        f"Name your custom crop #{i+1}",
-        value="Alfalfa",
-        key=f"custom_name_{i}",
-    )
-    actual_crop_name = custom_name
-  else:
-    actual_crop_name = c_type
-
-  default_rate = crop_defaults[c_type]
-
-  # Annual water consumption of each crop
-  c_rate = st.sidebar.number_input(
-      f"5. Annual Water Rate ($m^3$/ha) for {actual_crop_name}",
-      min_value=500,
-      max_value=500000,
-      value=default_rate,
-      step=500,
-      key=f"rate_{i}",
-  )
-
-  # Size of farm (allocated per crop)
-  c_area = st.sidebar.slider(
-      f"1. Size of Farm (Hectares) for {actual_crop_name}",
-      min_value=0.5,
-      max_value=30.0,
-      value=2.0 if i == 0 else 1.0,
-      step=0.5,
-      key=f"area_{i}",
-  )
-
-  crop_water = c_area * c_rate
-  total_farm_area += c_area
-  total_baseline_water += crop_water
-
-  crop_data_list.append({
-      "Crop": actual_crop_name,
-      "Hectares (Size)": c_area,
-      "Water Rate ($m^3$/ha)": c_rate,
-      "Total Baseline Water ($m^3$)": crop_water,
-  })
-
-st.sidebar.markdown("---")
-st.sidebar.subheader("💧 Efficiency Controls")
-
-# Water % saved
-water_saved_pct = st.sidebar.slider(
-    "2. Percentage of Water Saved (%)",
-    min_value=0.0,
-    max_value=60.0,
-    value=20.0,
-    step=0.5,
-    help="Total percentage reduction in water consumption across the farm.",
-)
-
-# --- Calculations ---
-water_saved_m3 = total_baseline_water * (water_saved_pct / 100.0)
-
-# Stepped Tiers for Efficiency
-if water_saved_pct <= 15:
-  tier_name = "Tier 1 (0-15%)"
-  tier_multiplier = 1.0
-elif water_saved_pct <= 30:
-  tier_name = "Tier 2 (15-30%)"
-  tier_multiplier = 1.2
-elif water_saved_pct <= 45:
-  tier_name = "Tier 3 (30-45%)"
-  tier_multiplier = 1.5
 else:
-  tier_name = "Tier 4 (45-60%)"
-  tier_multiplier = 2.0
-
-# Base credits calculation (Multiplier without small farm bonus)
-total_credits = (water_saved_m3 / 10.0) * tier_multiplier
-
-credit_value_aed = 3.13
-total_revenue_aed = total_credits * credit_value_aed
-
-# --- Main Dashboard Layout ---
-col1, col2, col3 = st.columns(3)
-
-col1.metric(
-    "💧 Total Water Saved",
-    f"{water_saved_m3:,.0f} m³",
-    f"{water_saved_pct}% reduction",
-)
-col2.metric("⭐ Efficiency Tier", tier_name, f"Multiplier: {tier_multiplier}x")
-col3.metric("🪙 Water Credits Earned", f"{total_credits:,.1f}", "WC")
-
-st.markdown("---")
-
-# THE MONEY SECTION
-st.subheader("💵 Financial Payout Summary")
-st.success(
-    f"## 💰 Total Farmer Take-Home: **{total_revenue_aed:,.2f} AED**\n\n"
-    f"**Calculation Breakdown:**\n"
-    f"1. **Total Farm Size:** {total_farm_area} hectares across {num_crops}"
-    f" crop type(s)\n"
-    f"2. **Total Water Saved:** {water_saved_m3:,.0f} $m^3$\n"
-    f"3. **Water Credits Earned:** ({water_saved_m3:,.0f} / 10) ×"
-    f" {tier_multiplier} ({tier_name}) = **{total_credits:,.1f} WC**\n"
-    f"4. **Cash Conversion:** {total_credits:,.1f} WC × 3.13 AED ="
-    f" **{total_revenue_aed:,.2f} AED**"
-)
-
-st.markdown("---")
-
-# Farm Allocation Table Section
-st.subheader("📊 Farm Allocation Summary")
-crop_df = pd.DataFrame(crop_data_list)
-st.table(crop_df)
-
-st.markdown("---")
-
-# Dual Graphs Section with Formulas Below
-st.subheader("📈 Simulation Graphs & Underlying Formulas")
-
-percentages = [i * 1.5 for i in range(41)]
-credits_list = []
-revenues_list = []
-
-for p in percentages:
-  s_m3 = total_baseline_water * (p / 100.0)
-  if p <= 15:
-    t_m = 1.0
-  elif p <= 30:
-    t_m = 1.2
-  elif p <= 45:
-    t_m = 1.5
-  else:
-    t_m = 2.0
-  c = (s_m3 / 10.0) * t_m
-  credits_list.append(c)
-  revenues_list.append(c * credit_value_aed)
-
-chart_col1, chart_col2 = st.columns(2)
-
-with chart_col1:
-  st.markdown("### 🪙 Water Credits (WC) Earned")
-  credits_df = pd.DataFrame(
-      {"Water Saved (%)": percentages, "Water Credits (WC)": credits_list}
-  )
-  st.line_chart(credits_df.set_index("Water Saved (%)"))
-
-  st.markdown("**Mathematical Formula:**")
-  st.markdown(
-      r"$$\text{WC} = \left(\frac{\text{Baseline Water} \times"
-      r" \frac{\text{Saved \%}}{100}}{10}\right) \times \text{Tier Multiplier}$$"
-  )
-
-with chart_col2:
-  st.markdown("### 💰 Financial Profit / Revenue (AED)")
-  revenue_df = pd.DataFrame(
-      {"Water Saved (%)": percentages, "Profit (AED)": revenues_list}
-  )
-  st.line_chart(revenue_df.set_index("Water Saved (%)"))
-
-  st.markdown("**Mathematical Formula:**")
-  st.markdown(r"$$\text{Profit (AED)} = \text{WC} \times 3.13$$")
+    st.error("Please enter a valid number containing between 1 and 15 digits.")
