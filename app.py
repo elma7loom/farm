@@ -41,7 +41,7 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
         
         crop_data.append({"Crop": crop_name, "Water Requirement (kL/ha)": crop_water_per_ha})
 
-    # --- STATE INITIALIZATION FOR TIERS (Single Source of Truth) ---
+    # --- STATE INITIALIZATION FOR TIERS ---
     if "tier_editor" not in st.session_state:
         st.session_state.tier_editor = pd.DataFrame([
             {"Tier": "Tier 1", "Range": "0 - 20%", "Multiplier": 1.0},
@@ -49,6 +49,7 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
             {"Tier": "Tier 3", "Range": "41 - 60%", "Multiplier": 2.0},
         ])
 
+    # Grab current multiplier values directly from session state
     active_tier_df = st.session_state.tier_editor
 
     # --- CALCULATIONS ---
@@ -147,6 +148,7 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
     st.subheader("⚙️ Efficiency Tiers (Editable Multipliers)")
     st.markdown("*(Scroll down here anytime you want to customize your tier multiplier values)*")
     
+    # Streamlit natively manages state updates through session_state when key matches
     st.data_editor(
         st.session_state.tier_editor,
         column_config={
