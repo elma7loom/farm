@@ -86,31 +86,37 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
     water_credits_value = water_credits * tier_multiplier
 
     # =========================================================================
-    # ROW 1: NOTICEABLE SAVINGS METRICS ALONGSIDE THE CHART
+    # VISUAL ROW 1: PROGRESS BAR & WATER REDUCTION OVERVIEW ALONGSIDE CHART
     # =========================================================================
-    st.subheader("🎯 Water Savings & Performance Overview")
+    st.subheader("🎯 Visual Water Savings Progress")
     
     top_col1, top_col2 = st.columns([1, 1])
     
     with top_col1:
-        m_col1, m_col2 = st.columns(2)
-        m_col1.metric("📈 Savings %", f"{water_savings_pct:,.2f}%", help="Calculated from Starting vs Current water use")
-        m_col2.metric("💧 Water Saved", f"{water_saved_kl:,.2f} kL")
+        # Visual progress bar representing savings percentage (capped between 0 and 1)
+        progress_val = min(1.0, max(0.0, water_savings_pct / 100.0))
+        st.markdown(f"**Water Reduction Progress: {water_savings_pct:,.2f}% Saved**")
+        st.progress(progress_val)
         
-        sub_col1, sub_col2, sub_col3 = st.columns(3)
-        sub_col1.metric("Starting", f"{starting_water:,.2f} kL")
-        sub_col2.metric("Current", f"{current_water:,.2f} kL")
-        sub_col3.metric("Efficient Target", f"{efficient_baseline:,.2f} kL", help="Requirement × Hectares (Reference)")
+        # Breakdown metrics showing the flow from Starting -> Current -> Saved
+        b_col1, b_col2, b_col3 = st.columns(3)
+        b_col1.metric("Original (Starting)", f"{starting_water:,.2f} kL")
+        b_col2.metric("Current Use", f"{current_water:,.2f} kL")
+        b_col3.metric("Water Saved", f"{water_saved_kl:,.2f} kL")
+
+        ref_col1, ref_col2 = st.columns(2)
+        ref_col1.metric("Water Saved (m³)", f"{water_saved_m3:,.2f} m³")
+        ref_col2.metric("Efficient Target", f"{efficient_baseline:,.2f} kL", help="Requirement × Hectares (Reference)")
 
     with top_col2:
         st.markdown("**Efficient Water Requirement by Crop**")
         chart_df = df[["Crop", "Total Efficient Water (kL)"]].set_index("Crop")
-        st.bar_chart(chart_df, height=220)
+        st.bar_chart(chart_df, height=240)
 
     st.write("---")
 
     # =========================================================================
-    # ROW 2: WIDER FINANCIAL REWARDS (NO TRUNCATION)
+    # ROW 2: FINANCIAL REWARDS & ACTIVE TIERS
     # =========================================================================
     st.subheader("💰 Financial Rewards & Active Tiers")
     
