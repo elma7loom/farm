@@ -86,19 +86,17 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
     water_credits_value = water_credits * tier_multiplier
 
     # =========================================================================
-    # TOP ROW: NOTICEABLE SAVINGS METRICS ALONGSIDE THE CHART (NO SCROLLING)
+    # ROW 1: NOTICEABLE SAVINGS METRICS ALONGSIDE THE CHART
     # =========================================================================
     st.subheader("🎯 Water Savings & Performance Overview")
     
     top_col1, top_col2 = st.columns([1, 1])
     
     with top_col1:
-        # High-impact callouts for savings
         m_col1, m_col2 = st.columns(2)
         m_col1.metric("📈 Savings %", f"{water_savings_pct:,.2f}%", help="Calculated from Starting vs Current water use")
         m_col2.metric("💧 Water Saved", f"{water_saved_kl:,.2f} kL")
         
-        # Supporting baseline info
         sub_col1, sub_col2, sub_col3 = st.columns(3)
         sub_col1.metric("Starting", f"{starting_water:,.2f} kL")
         sub_col2.metric("Current", f"{current_water:,.2f} kL")
@@ -112,41 +110,48 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
     st.write("---")
 
     # =========================================================================
-    # SECOND ROW: MONEY & REWARDS GROUPED WITH TIERS TABLE
+    # ROW 2: WIDER FINANCIAL REWARDS (NO TRUNCATION)
     # =========================================================================
-    st.subheader("💰 Financial Rewards & Tiers")
+    st.subheader("💰 Financial Rewards & Active Tiers")
     
-    money_col1, money_col2 = st.columns([1, 1])
-    
-    with money_col1:
-        # Grouped money metrics
-        fin_col1, fin_col2, fin_col3, fin_col4 = st.columns(4)
-        fin_col1.metric("🏆 Active Tier", current_tier)
-        fin_col2.metric("⚡ Multiplier", f"{tier_multiplier}x")
-        fin_col3.metric("Water Credits", f"{water_credits:,.2f}")
-        fin_col4.metric("Credits Value", f"AED {water_credits_value:,.2f}")
+    fin_col1, fin_col2 = st.columns(2)
+    with fin_col1:
+        st.metric("🏆 Active Tier", current_tier)
+        st.metric("Water Credits", f"{water_credits:,.2f}")
+    with fin_col2:
+        st.metric("⚡ Tier Multiplier", f"{tier_multiplier}x")
+        st.metric("Credits Value", f"AED {water_credits_value:,.2f}")
 
-        st.markdown("### 📋 Crop Data Table")
-        st.dataframe(df, use_container_width=True)
+    st.write("---")
 
-    with money_col2:
-        st.markdown("### ⚙️ Efficiency Tiers (Editable Multipliers)")
-        edited_tier_df = st.data_editor(
-            st.session_state.tier_df_state,
-            column_config={
-                "Multiplier": st.column_config.NumberColumn(
-                    "Multiplier",
-                    min_value=1.0,
-                    max_value=2.5,
-                    step=0.1,
-                    format="%.1f"
-                )
-            },
-            disabled=["Tier", "Range"],
-            use_container_width=True,
-            key="tier_editor"
-        )
-        st.session_state.tier_df_state = edited_tier_df
+    # =========================================================================
+    # ROW 3: EFFICIENCY TIERS TABLE PLACED BELOW FINANCIAL REWARDS
+    # =========================================================================
+    st.subheader("⚙️ Efficiency Tiers (Editable Multipliers)")
+    edited_tier_df = st.data_editor(
+        st.session_state.tier_df_state,
+        column_config={
+            "Multiplier": st.column_config.NumberColumn(
+                "Multiplier",
+                min_value=1.0,
+                max_value=2.5,
+                step=0.1,
+                format="%.1f"
+            )
+        },
+        disabled=["Tier", "Range"],
+        use_container_width=True,
+        key="tier_editor"
+    )
+    st.session_state.tier_df_state = edited_tier_df
+
+    st.write("---")
+
+    # =========================================================================
+    # ROW 4: CROP DATA TABLE
+    # =========================================================================
+    st.subheader("📋 Crop Data Table")
+    st.dataframe(df, use_container_width=True)
 
     st.write("---")
     st.write(f"**Farm Size:** {hectares} hectares &nbsp;&nbsp;|&nbsp;&nbsp; **Total Crops Managed:** {num_crops}")
