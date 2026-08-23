@@ -2,54 +2,42 @@ import pandas as pd
 import streamlit as st
 
 st.set_page_config(
-    page_title="Water Credit Farm Simulator", layout="wide", initial_sidebar_state="expanded"
+    page_title="Water Credit Farm Simulator",
+    layout="wide",
+    initial_sidebar_state="expanded",
 )
 
 # --- WARM MINIMALIST CUSTOM CSS STYLING ---
 st.markdown(
     """
     <style>
-    /* Main Background & Text Color */
     .stApp {
         background-color: #FDFBF7;
         color: #2D2D2D;
     }
-    
-    /* Sidebar Styling */
     [data-testid="stSidebar"] {
         background-color: #F4EFE6;
         color: #2D2D2D;
     }
-
-    /* Headings & General Text */
     h1, h2, h3, h4, h5, h6, p, span, label, div {
         color: #2D2D2D !important;
     }
-
-    /* Metric Cards Customization */
     [data-testid="stMetricValue"] {
-        color: #D97757 !important; /* Terracotta Accent */
+        color: #D97757 !important;
     }
-    
     [data-testid="stMetricLabel"] {
         color: #2D2D2D !important;
     }
-
-    /* Custom Success Box (Terracotta & Sage Vibe) */
     .stSuccess {
         background-color: #E6EFEA !important;
-        border-color: #87A99A !important; /* Sage Green */
+        border-color: #87A99A !important;
         color: #2D2D2D !important;
     }
-    
-    /* Info Box */
     .stInfo {
         background-color: #F7EBE8 !important;
-        border-color: #D97757 !important; /* Terracotta */
+        border-color: #D97757 !important;
         color: #2D2D2D !important;
     }
-
-    /* Tables */
     table {
         color: #2D2D2D !important;
         background-color: #FDFBF7 !important;
@@ -59,12 +47,11 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.title("🌾 Advanced Interactive Water Credit Farm Simulator")
+st.title("🌾 Interactive Water Credit Farm Simulator")
 st.markdown(
-    "Designed for Judges & Investors: Configure multiple crops, adjust water"
-    " savings **up to 60%**, and watch the credits and revenue update in"
-    " real-time. Farms **3.5 hectares or below** automatically receive the"
-    " smallholder protection bonus!"
+    "Designed for Judges & Investors: Configure your farm using the 6 core"
+    " parameters in the sidebar to simulate water savings, efficiency tiers,"
+    " and financial payouts in real-time."
 )
 
 # Sidebar / Input Section
@@ -78,28 +65,30 @@ crop_defaults = {
     "Custom Crop": 10000,
 }
 
-# 3. How many crops grown?
+# Slider 3: How many crops grown
 num_crops = st.sidebar.selectbox(
-    "How many crops grown on the farm?", [1, 2, 3], index=1
+    "3. How many crops grown?", [1, 2, 3], index=1
 )
 
 st.sidebar.markdown("---")
-st.sidebar.subheader("🌱 Crop Breakdown & Water Rates")
+st.sidebar.subheader("🌱 Crop Types & Water Consumption")
 
 crop_data_list = []
 total_farm_area = 0
 total_baseline_water = 0
 
-# 4 & 5. What crops are grown and their water consumption / area
 for i in range(num_crops):
-  st.sidebar.markdown(f"**Crop #{i+1}**")
+  st.sidebar.markdown(f"**Crop #{i+1} Configuration**")
+
+  # Slider 4: Types of crops grown
   c_type = st.sidebar.selectbox(
-      f"Crop Type #{i+1}", list(crop_defaults.keys()), key=f"crop_{i}"
+      f"4. Type of Crop #{i+1}", list(crop_defaults.keys()), key=f"crop_{i}"
   )
   default_rate = crop_defaults[c_type]
 
+  # Slider 5: Annual water consumption of each crop
   c_rate = st.sidebar.number_input(
-      f"Annual Water Rate ($m^3$/ha) for Crop #{i+1}",
+      f"5. Annual Water Rate ($m^3$/ha) for Crop #{i+1}",
       min_value=500,
       max_value=500000,
       value=default_rate,
@@ -107,8 +96,9 @@ for i in range(num_crops):
       key=f"rate_{i}",
   )
 
+  # Slider 1: Size of farm (allocated per crop)
   c_area = st.sidebar.slider(
-      f"Area (Hectares) for Crop #{i+1}",
+      f"1. Size of Farm (Hectares) for Crop #{i+1}",
       min_value=0.5,
       max_value=30.0,
       value=2.0 if i == 0 else 1.0,
@@ -122,17 +112,17 @@ for i in range(num_crops):
 
   crop_data_list.append({
       "Crop": c_type,
-      "Hectares": c_area,
-      "Water Rate": c_rate,
-      "Total Water": crop_water,
+      "Hectares (Size)": c_area,
+      "Water Rate ($m^3$/ha)": c_rate,
+      "Total Baseline Water ($m^3$)": crop_water,
   })
 
 st.sidebar.markdown("---")
-st.sidebar.subheader("💧 Conservation & Equity Settings")
+st.sidebar.subheader("💧 Efficiency & Equity Controls")
 
-# 2. Percentage of water saved up to 60%
+# Slider 2: Water % saved
 water_saved_pct = st.sidebar.slider(
-    "Percentage of Water Saved (%)",
+    "2. Percentage of Water Saved (%)",
     min_value=0.0,
     max_value=60.0,
     value=20.0,
@@ -140,26 +130,26 @@ water_saved_pct = st.sidebar.slider(
     help="Total percentage reduction in water consumption across the farm.",
 )
 
-# Small Farm Protection Settings
+# Slider 6: Small farm multiplier
 SMALL_FARM_LIMIT = 3.5
 is_small_farm = total_farm_area <= SMALL_FARM_LIMIT
 
 small_farm_multiplier = st.sidebar.slider(
-    "Smallholder Bonus Multiplier",
+    "6. Small Farm Multiplier (Bonus)",
     min_value=1.0,
     max_value=3.0,
     value=1.5,
     step=0.1,
     help=(
-        "Extra multiplier added automatically if total farm area is 3.5 ha or"
-        " below."
+        "Automatic bonus multiplier applied if total farm size is <= 3.5"
+        " hectares."
     ),
 )
 
 # --- Calculations ---
 water_saved_m3 = total_baseline_water * (water_saved_pct / 100.0)
 
-# Expanded Stepped Tiers for up to 60% Water Saving Efficiency
+# Stepped Tiers for Efficiency
 if water_saved_pct <= 15:
   tier_name = "Tier 1 (0-15%)"
   tier_multiplier = 1.0
@@ -173,12 +163,10 @@ else:
   tier_name = "Tier 4 (45-60%)"
   tier_multiplier = 2.0
 
-# Credits calculation
 base_credits = water_saved_m3 / 10.0 * tier_multiplier
 final_multiplier = small_farm_multiplier if is_small_farm else 1.0
 total_credits = base_credits * final_multiplier
 
-# Financial Value in AED (1 Credit = 3.13 AED)
 credit_value_aed = 3.13
 total_revenue_aed = total_credits * credit_value_aed
 
@@ -195,13 +183,13 @@ col3.metric("🪙 Water Credits Earned", f"{total_credits:,.1f}", "WC")
 
 st.markdown("---")
 
-# THE MONEY SECTION - EXPLICIT FOR JUDGES
-st.subheader("💵 The Actual Money The Farmer Makes")
+# THE MONEY SECTION
+st.subheader("💵 Financial Payout Summary")
 st.success(
     f"## 💰 Total Farmer Take-Home: **{total_revenue_aed:,.2f} AED**\n\n"
     f"**Calculation Breakdown:**\n"
-    f"1. **Total Farm Size:** {total_farm_area} hectares ({num_crops} crops"
-    f" combined)\n"
+    f"1. **Total Farm Size:** {total_farm_area} hectares across {num_crops}"
+    f" crop type(s)\n"
     f"2. **Base Credits:** {base_credits:,.1f} WC (Based on {water_saved_m3:,.0f}"
     f" $m^3$ saved & {tier_name})\n"
     f"3. **Small Farm Bonus:** × {final_multiplier} Multiplier ➔"
@@ -213,12 +201,12 @@ st.success(
 st.markdown("---")
 
 # Farm Status & Table Section
-st.subheader("📊 Farm Status & Equity Check")
+st.subheader("📊 Farm Status & Crop Allocation")
 if is_small_farm:
   st.info(
       f"🛡️ **Small Farm Protection ACTIVE**: Total farm area is"
-      f" **{total_farm_area} ha** (which is <= {SMALL_FARM_LIMIT} ha). The"
-      f" **{small_farm_multiplier}x** smallholder bonus is automatically"
+      f" **{total_farm_area} ha** (<= {SMALL_FARM_LIMIT} ha). The"
+      f" **{small_farm_multiplier}x** small farm multiplier is automatically"
       " applied!"
   )
 else:
@@ -228,17 +216,15 @@ else:
       " threshold). Standard rates apply."
   )
 
-# Display individual crop breakdown table
 crop_df = pd.DataFrame(crop_data_list)
-st.markdown("### 📋 Crop Allocation Summary")
 st.table(crop_df)
 
 st.markdown("---")
 
-# Dual Graphs Section: Water Credits vs. Profit/Revenue (0% to 60%)
-st.subheader("📈 Simulation Graphs (Scaling from 0% to 60% Water Savings)")
+# Dual Graphs Section with Formulas Below
+st.subheader("📈 Simulation Graphs & Underlying Formulas")
 
-percentages = [i * 1.5 for i in range(41)]  # 0% to 60% in steps of 1.5%
+percentages = [i * 1.5 for i in range(41)]
 credits_list = []
 revenues_list = []
 
@@ -265,9 +251,19 @@ with chart_col1:
   )
   st.line_chart(credits_df.set_index("Water Saved (%)"))
 
+  st.markdown("**Mathematical Formula:**")
+  st.markdown(
+      r"$$\text{WC} = \left(\frac{\text{Baseline Water} \times"
+      r" \frac{\text{Saved \%}}{100}}{10}\right) \times \text{Tier Multiplier}"
+      r" \times \text{Small Farm Multiplier}$$"
+  )
+
 with chart_col2:
   st.markdown("### 💰 Financial Profit / Revenue (AED)")
   revenue_df = pd.DataFrame(
       {"Water Saved (%)": percentages, "Profit (AED)": revenues_list}
   )
   st.line_chart(revenue_df.set_index("Water Saved (%)"))
+
+  st.markdown("**Mathematical Formula:**")
+  st.markdown(r"$$\text{Profit (AED)} = \text{WC} \times 3.13$$")
