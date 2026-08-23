@@ -70,13 +70,12 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
         
         st.markdown("### Efficiency Tiers (Editable Multipliers)")
         
-        # Initialize default editable table data for tiers if not already present
+        # Initialize default editable table data for 3 tiers (0-20, 21-40, 41-60)
         if "tier_df_state" not in st.session_state:
             st.session_state.tier_df_state = pd.DataFrame([
                 {"Tier": "Tier 1", "Range": "0 - 20%", "Multiplier": 1.0},
                 {"Tier": "Tier 2", "Range": "21 - 40%", "Multiplier": 1.5},
                 {"Tier": "Tier 3", "Range": "41 - 60%", "Multiplier": 2.0},
-                {"Tier": "Tier 4", "Range": "61%+", "Multiplier": 2.5},
             ])
 
         # Editable data table with limits (1.0 to 2.5)
@@ -96,25 +95,21 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
             key="tier_editor"
         )
         
-        # Extract multipliers from the user-edited table
+        # Extract multipliers from the user-edited table (3 tiers)
         tier_1_mult = edited_tier_df.loc[edited_tier_df["Tier"] == "Tier 1", "Multiplier"].values[0]
         tier_2_mult = edited_tier_df.loc[edited_tier_df["Tier"] == "Tier 2", "Multiplier"].values[0]
         tier_3_mult = edited_tier_df.loc[edited_tier_df["Tier"] == "Tier 3", "Multiplier"].values[0]
-        tier_4_mult = edited_tier_df.loc[edited_tier_df["Tier"] == "Tier 4", "Multiplier"].values[0]
 
-    # Determine active tier and multiplier based on water savings percentage
+    # Determine active tier and multiplier based on water savings percentage (restricted to 3 tiers)
     if 0 <= water_savings_pct <= 20:
         current_tier = "Tier 1 (0-20%)"
         tier_multiplier = tier_1_mult
     elif 20 < water_savings_pct <= 40:
         current_tier = "Tier 2 (21-40%)"
         tier_multiplier = tier_2_mult
-    elif 40 < water_savings_pct <= 60:
+    else:
         current_tier = "Tier 3 (41-60%)"
         tier_multiplier = tier_3_mult
-    else:
-        current_tier = "Tier 4 (61%+)"
-        tier_multiplier = tier_4_mult
 
     # Calculate base water credits and monetary value in AED
     water_credits = water_saved_m3 / water_credit_value if water_credit_value > 0 else 0.0
