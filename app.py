@@ -49,7 +49,6 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
             {"Tier": "Tier 3", "Range": "41 - 60%", "Multiplier": 2.0},
         ])
 
-    # Grab current multiplier values directly from session state
     active_tier_df = st.session_state.tier_editor
 
     # --- CALCULATIONS ---
@@ -92,78 +91,73 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
     water_credits_value = water_credits * tier_multiplier
 
     # =========================================================================
-    # ROW 1: VISUAL PROGRESS BAR & WATER REDUCTION OVERVIEW ALONGSIDE CHART
+    # ROW 1: COMPACT EFFICIENCY TIERS TABLE (ON THE SIDE) & CROP CHART
+    # =========================================================================
+    st.subheader("📊 Overview & Multiplier Settings")
+    
+    col_left, col_right = st.columns([1, 1])
+    
+    with col_left:
+        st.markdown("**⚙️ Efficiency Tiers**")
+        st.data_editor(
+            st.session_state.tier_editor,
+            column_config={
+                "Multiplier": st.column_config.NumberColumn(
+                    "Multiplier",
+                    min_value=1.0,
+                    max_value=2.5,
+                    step=0.1,
+                    format="%.1f"
+                )
+            },
+            disabled=["Tier", "Range"],
+            use_container_width=True,
+            key="tier_editor",
+            height=170
+        )
+
+    with col_right:
+        st.markdown("**📉 Efficient Water Requirement by Crop**")
+        chart_df = df[["Crop", "Total Efficient Water (kL)"]].set_index("Crop")
+        st.bar_chart(chart_df, height=170)
+
+    st.write("---")
+
+    # =========================================================================
+    # ROW 2: VISUAL WATER SAVINGS PROGRESS & METRICS
     # =========================================================================
     st.subheader("🎯 Visual Water Savings Progress")
     
-    top_col1, top_col2 = st.columns([1, 1])
+    progress_val = min(1.0, max(0.0, water_savings_pct / 100.0))
+    st.markdown(f"**Water Reduction Progress: {water_savings_pct:,.2f}% Saved**")
+    st.progress(progress_val)
     
-    with top_col1:
-        progress_val = min(1.0, max(0.0, water_savings_pct / 100.0))
-        st.markdown(f"**Water Reduction Progress: {water_savings_pct:,.2f}% Saved**")
-        st.progress(progress_val)
-        
-        b_col1, b_col2, b_col3 = st.columns(3)
-        b_col1.metric("Original (Starting)", f"{starting_water:,.2f} kL")
-        b_col2.metric("Current Use", f"{current_water:,.2f} kL")
-        b_col3.metric("Water Saved", f"{water_saved_kl:,.2f} kL")
-
-        ref_col1, ref_col2 = st.columns(2)
-        ref_col1.metric("Water Saved (m³)", f"{water_saved_m3:,.2f} m³")
-        ref_col2.metric("Efficient Target", f"{efficient_baseline:,.2f} kL", help="Requirement × Hectares (Reference)")
-
-    with top_col2:
-        st.markdown("**Efficient Water Requirement by Crop**")
-        chart_df = df[["Crop", "Total Efficient Water (kL)"]].set_index("Crop")
-        st.bar_chart(chart_df, height=240)
+    b_col1, b_col2, b_col3, b_col4 = st.columns(4)
+    b_col1.metric("Original (Starting)", f"{starting_water:,.2f} kL")
+    b_col2.metric("Current Use", f"{current_water:,.2f} kL")
+    b_col3.metric("Water Saved", f"{water_saved_kl:,.2f} kL")
+    b_col4.metric("Efficient Target", f"{efficient_baseline:,.2f} kL", help="Requirement × Hectares (Reference)")
 
     st.write("---")
 
     # =========================================================================
-    # ROW 2: FINANCIAL REWARDS & ACTIVE TIERS
+    # ROW 3: FINANCIAL REWARDS & ACTIVE TIERS
     # =========================================================================
     st.subheader("💰 Financial Rewards & Active Tiers")
     
-    fin_col1, fin_col2 = st.columns(2)
-    with fin_col1:
-        st.metric("🏆 Active Tier", current_tier)
-        st.metric("Water Credits", f"{water_credits:,.2f}")
-    with fin_col2:
-        st.metric("⚡ Tier Multiplier", f"{tier_multiplier}x")
-        st.metric("Credits Value", f"AED {water_credits_value:,.2f}")
+    fin_col1, fin_col2, fin_col3, fin_col4 = st.columns(4)
+    fin_col1.metric("🏆 Active Tier", current_tier)
+    fin_col2.metric("⚡ Multiplier", f"{tier_multiplier}x")
+    fin_col3.metric("Water Credits", f"{water_credits:,.2f}")
+    fin_col4.metric("Credits Value", f"AED {water_credits_value:,.2f}")
 
     st.write("---")
 
     # =========================================================================
-    # ROW 3: CROP DATA TABLE
+    # ROW 4: CROP DATA TABLE
     # =========================================================================
     st.subheader("📋 Crop Data Table")
     st.dataframe(df, use_container_width=True)
-
-    st.write("---")
-
-    # =========================================================================
-    # ROW 4: EFFICIENCY TIERS TABLE (PLACED AT THE BOTTOM)
-    # =========================================================================
-    st.subheader("⚙️ Efficiency Tiers (Editable Multipliers)")
-    st.markdown("*(Scroll down here anytime you want to customize your tier multiplier values)*")
-    
-    # Streamlit natively manages state updates through session_state when key matches
-    st.data_editor(
-        st.session_state.tier_editor,
-        column_config={
-            "Multiplier": st.column_config.NumberColumn(
-                "Multiplier",
-                min_value=1.0,
-                max_value=2.5,
-                step=0.1,
-                format="%.1f"
-            )
-        },
-        disabled=["Tier", "Range"],
-        use_container_width=True,
-        key="tier_editor"
-    )
 
     st.write("---")
     st.write(f"**Farm Size:** {hectares} hectares &nbsp;&nbsp;|&nbsp;&nbsp; **Total Crops Managed:** {num_crops}")
