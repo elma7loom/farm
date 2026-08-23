@@ -41,16 +41,15 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
         
         crop_data.append({"Crop": crop_name, "Water Requirement (kL/ha)": crop_water_per_ha})
 
-    # --- STATE INITIALIZATION FOR TIERS ---
-    if "tier_df" not in st.session_state:
-        st.session_state.tier_df = pd.DataFrame([
+    # --- STATE INITIALIZATION FOR TIERS (Single Source of Truth) ---
+    if "tier_editor" not in st.session_state:
+        st.session_state.tier_editor = pd.DataFrame([
             {"Tier": "Tier 1", "Range": "0 - 20%", "Multiplier": 1.0},
             {"Tier": "Tier 2", "Range": "21 - 40%", "Multiplier": 1.5},
             {"Tier": "Tier 3", "Range": "41 - 60%", "Multiplier": 2.0},
         ])
 
-    # Grab the active tier data instantly from the editor state if available
-    active_tier_df = st.session_state.get("tier_editor", st.session_state.tier_df)
+    active_tier_df = st.session_state.tier_editor
 
     # --- CALCULATIONS ---
     df = pd.DataFrame(crop_data)
@@ -148,8 +147,9 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
     st.subheader("⚙️ Efficiency Tiers (Editable Multipliers)")
     st.markdown("*(Scroll down here anytime you want to customize your tier multiplier values)*")
     
-    edited_df = st.data_editor(
-        st.session_state.tier_df,
+    # Streamlit natively handles state binding and updates via the widget key
+    st.data_editor(
+        st.session_state.tier_editor,
         column_config={
             "Multiplier": st.column_config.NumberColumn(
                 "Multiplier",
@@ -163,7 +163,6 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
         use_container_width=True,
         key="tier_editor"
     )
-    st.session_state.tier_df = edited_df
 
     st.write("---")
     st.write(f"**Farm Size:** {hectares} hectares &nbsp;&nbsp;|&nbsp;&nbsp; **Total Crops Managed:** {num_crops}")
@@ -171,3 +170,5 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
 else:
     st.sidebar.error("Please enter a valid number containing between 1 and 15 digits.")
     st.warning("👈 Please enter a valid number of crops in the sidebar to view the dashboard.")
+```eof
+
