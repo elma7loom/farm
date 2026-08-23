@@ -9,9 +9,6 @@ st.title("🌱 Farm Data Visualization & Water Efficiency Dashboard")
 # --- SIDEBAR INPUTS ---
 st.sidebar.header("Farm Data Inputs")
 
-# Enter the hectares of the farm
-hectares = st.sidebar.number_input("Enter the hectares of the farm:", min_value=0.1, value=1.0, format="%.2f")
-
 # Starting vs Current Water Consumption inputs
 starting_water = st.sidebar.number_input("Starting Water Consumption (Before Reduction in kL):", min_value=0.0, format="%.2f")
 current_water = st.sidebar.number_input("Current Water Consumption (After Reduction in kL):", min_value=0.0, format="%.2f")
@@ -33,13 +30,13 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
         st.sidebar.warning("Large number entered. Displaying input fields for the first 50 crops.")
 
     crop_data = []
-    st.sidebar.subheader("Crop Details (Per Hectare)")
+    st.sidebar.subheader("Crop Details")
 
     for i in range(render_limit):
         crop_name = st.sidebar.text_input(f"Crop {i+1} Name", value=f"Crop {i+1}", key=f"name_{i}")
-        crop_water_per_ha = st.sidebar.number_input(f"Water requirement (kL/ha) for {crop_name}", min_value=0.0, key=f"water_{i}")
+        crop_water = st.sidebar.number_input(f"Annual Water (kL) for {crop_name}", min_value=0.0, key=f"water_{i}")
         
-        crop_data.append({"Crop": crop_name, "Water Requirement (kL/ha)": crop_water_per_ha})
+        crop_data.append({"Crop": crop_name, "Water Consumption (kL)": crop_water})
 
     # --- STATE INITIALIZATION FOR TIERS ---
     if "tier_df" not in st.session_state:
@@ -52,9 +49,8 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
     # --- CALCULATIONS ---
     df = pd.DataFrame(crop_data)
     
-    # Calculate total efficient water requirement for reference
-    df["Total Efficient Water (kL)"] = df["Water Requirement (kL/ha)"] * hectares
-    efficient_baseline = df["Total Efficient Water (kL)"].sum()
+    # Efficient baseline is simply the direct sum of crop water consumptions
+    efficient_baseline = df["Water Consumption (kL)"].sum()
     
     # Savings calculations (Starting vs Current)
     water_saved_kl = max(0.0, starting_water - current_water)
@@ -65,7 +61,7 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
     else:
         water_savings_pct = 0.0
 
-    # Extract multipliers safely from current session state dataframe
+    # Extract multipliers safely from session state dataframe
     active_tier_df = st.session_state.tier_df
     try:
         tier_1_mult = float(active_tier_df.loc[active_tier_df["Tier"] == "Tier 1", "Multiplier"].values[0])
@@ -98,7 +94,6 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
     
     with col_left:
         st.markdown("**⚙️ Efficiency Tiers**")
-        # Capture edits directly without conflicting keys
         edited_df = st.data_editor(
             st.session_state.tier_df,
             column_config={
@@ -117,8 +112,8 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
         st.session_state.tier_df = edited_df
 
     with col_right:
-        st.markdown("**📉 Efficient Water Requirement by Crop**")
-        chart_df = df[["Crop", "Total Efficient Water (kL)"]].set_index("Crop")
+        st.markdown("**📉 Water Consumption by Crop**")
+        chart_df = df.set_index("Crop")
         st.bar_chart(chart_df, height=170)
 
     st.write("---")
@@ -136,7 +131,7 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
     b_col1.metric("Original (Starting)", f"{starting_water:,.2f} kL")
     b_col2.metric("Current Use", f"{current_water:,.2f} kL")
     b_col3.metric("Water Saved", f"{water_saved_kl:,.2f} kL")
-    b_col4.metric("Efficient Target", f"{efficient_baseline:,.2f} kL", help="Requirement × Hectares (Reference)")
+    b_col4.metric("Efficient Target", f"{efficient_baseline:,.2f} kL", help="Sum of crop water consumptions")
 
     st.write("---")
 
@@ -160,7 +155,7 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
     st.dataframe(df, use_container_width=True)
 
     st.write("---")
-    st.write(f"**Farm Size:** {hectares} hectares &nbsp;&nbsp;|&nbsp;&nbsp; **Total Crops Managed:** {num_crops}")
+    st.write(f"**Total Crops Managed:** {num_crops}")
 
 else:
     st.sidebar.error("Please enter a valid number containing between 1 and 15 digits.")
