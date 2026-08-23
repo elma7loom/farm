@@ -38,7 +38,7 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
         
         crop_data.append({"Crop": crop_name, "Water Consumption (kL)": crop_water})
 
-    # --- STATE INITIALIZATION FOR TIERS ---
+    # --- STATE INITIALIZATION FOR TIERS (Placed First) ---
     if "tier_df" not in st.session_state:
         st.session_state.tier_df = pd.DataFrame([
             {"Tier": "Tier 1", "Range": "0 - 20%", "Multiplier": 1.0},
@@ -46,10 +46,44 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
             {"Tier": "Tier 3", "Range": "41 - 60%", "Multiplier": 2.0},
         ])
 
-    # --- CALCULATIONS ---
+    # =========================================================================
+    # ROW 1: EFFICIENCY TIERS TABLE (FIRST) & CROP CHART
+    # =========================================================================
+    st.subheader("📊 Overview & Multiplier Settings")
+    
+    col_left, col_right = st.columns([1, 1])
+    
+    with col_left:
+        st.markdown("**⚙️ Efficiency Tiers (Editable)**")
+        # Render table first so edits are captured instantly before calculations run
+        edited_df = st.data_editor(
+            st.session_state.tier_df,
+            column_config={
+                "Multiplier": st.column_config.NumberColumn(
+                    "Multiplier",
+                    min_value=1.0,
+                    max_value=2.5,
+                    step=0.1,
+                    format="%.1f"
+                )
+            },
+            disabled=["Tier", "Range"],
+            use_container_width=True,
+            height=170,
+            key="tier_editor"
+        )
+        st.session_state.tier_df = edited_df
+
     df = pd.DataFrame(crop_data)
     
-    # Efficient baseline is simply the direct sum of crop water consumptions
+    with col_right:
+        st.markdown("**📉 Water Consumption by Crop**")
+        chart_df = df.set_index("Crop")
+        st.bar_chart(chart_df, height=170)
+
+    st.write("---")
+
+    # --- CALCULATIONS (Using Freshly Updated Multipliers) ---
     efficient_baseline = df["Water Consumption (kL)"].sum()
     
     # Savings calculations (Starting vs Current)
@@ -61,7 +95,7 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
     else:
         water_savings_pct = 0.0
 
-    # Extract multipliers safely from session state dataframe
+    # Extract multipliers safely from the updated session state table
     active_tier_df = st.session_state.tier_df
     try:
         tier_1_mult = float(active_tier_df.loc[active_tier_df["Tier"] == "Tier 1", "Multiplier"].values[0])
@@ -84,39 +118,6 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
     # Calculate financial values
     water_credits = water_saved_m3 / water_credit_value if water_credit_value > 0 else 0.0
     water_credits_value = water_credits * tier_multiplier
-
-    # =========================================================================
-    # ROW 1: COMPACT EFFICIENCY TIERS TABLE (ON THE SIDE) & CROP CHART
-    # =========================================================================
-    st.subheader("📊 Overview & Multiplier Settings")
-    
-    col_left, col_right = st.columns([1, 1])
-    
-    with col_left:
-        st.markdown("**⚙️ Efficiency Tiers**")
-        edited_df = st.data_editor(
-            st.session_state.tier_df,
-            column_config={
-                "Multiplier": st.column_config.NumberColumn(
-                    "Multiplier",
-                    min_value=1.0,
-                    max_value=2.5,
-                    step=0.1,
-                    format="%.1f"
-                )
-            },
-            disabled=["Tier", "Range"],
-            use_container_width=True,
-            height=170
-        )
-        st.session_state.tier_df = edited_df
-
-    with col_right:
-        st.markdown("**📉 Water Consumption by Crop**")
-        chart_df = df.set_index("Crop")
-        st.bar_chart(chart_df, height=170)
-
-    st.write("---")
 
     # =========================================================================
     # ROW 2: VISUAL WATER SAVINGS PROGRESS & METRICS
