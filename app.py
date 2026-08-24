@@ -79,7 +79,8 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
     with col_right:
         st.markdown("**📉 Water Consumption by Crop**")
         chart_df = df.set_index("Crop")
-        st.bar_chart(chart_df, height=170)
+        # Adding horizontal=True fixes the vertical text issue by orienting bars horizontally
+        st.bar_chart(chart_df, horizontal=True, height=170)
 
     st.write("---")
 
