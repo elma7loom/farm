@@ -182,12 +182,11 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
 
     st.write("---")
 
-    # Crop Data Table
+    # Crop Data Table (Formatted with 1, 2, 3... index column)
     st.subheader("📋 Crop Data Table")
-    st.dataframe(df, use_container_width=True, hide_index=True)
-
-    st.write("---")
-    st.write(f"**Total Crops Managed:** {num_crops}")
+    display_df = df.copy()
+    display_df.insert(0, "No.", range(1, len(display_df) + 1))
+    st.dataframe(display_df, use_container_width=True, hide_index=True)
 
 else:
     st.sidebar.error("Please enter a valid number containing between 1 and 15 digits.")
