@@ -50,11 +50,11 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
     efficient_baseline = df["Water Consumption (kL)"].sum()
 
     # =========================================================================
-    # TOP SECTION: 3 COLUMNS (TIERS TABLE, CROP CHART, MACRO COMPARISON CHART)
+    # ROW 1: 2 COLUMNS (TIERS TABLE & CROP WATER CONSUMPTION CHART)
     # =========================================================================
     st.subheader("📊 Overview & Multiplier Settings")
     
-    col_left, col_middle, col_right = st.columns(3)
+    col_left, col_right = st.columns(2)
     
     with col_left:
         st.markdown("**⚙️ Efficiency Tiers (Editable)**")
@@ -76,18 +76,27 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
             num_rows="fixed"
         )
 
-    with col_middle:
+    with col_right:
         st.markdown("**📉 Water Consumption by Crop**")
         chart_df = df.set_index("Crop")
         st.bar_chart(chart_df, horizontal=True, height=170)
 
-    with col_right:
-        st.markdown("**📊 Performance Comparison**")
+    st.write("---")
+
+    # =========================================================================
+    # ROW 2: FULL-WIDTH MACRO PERFORMANCE COMPARISON CHART
+    # =========================================================================
+    with st.container(border=True):
+        st.subheader("📊 Macro Performance Comparison")
         macro_df = pd.DataFrame({
-            "Metric": ["Starting Water Consumption", "Current Water Consumption", "Target Water Consumption"],
+            "Metric": [
+                "Starting Water Consumption", 
+                "Current Water Consumption", 
+                "Target Water Consumption"
+            ],
             "Water (kL)": [starting_water, current_water, efficient_baseline]
         }).set_index("Metric")
-        st.bar_chart(macro_df, horizontal=True, height=170)
+        st.bar_chart(macro_df, horizontal=True, height=180)
 
     st.write("---")
 
@@ -125,7 +134,7 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
     water_credits_value = water_credits * tier_multiplier
 
     # =========================================================================
-    # ROW 2: VISUAL WATER SAVINGS PROGRESS (Wrapped in a Card Container)
+    # ROW 3: VISUAL WATER SAVINGS PROGRESS (Wrapped in a Card Container)
     # =========================================================================
     with st.container(border=True):
         st.subheader("🎯 Visual Water Savings Progress (Target Max: 60%)")
@@ -143,7 +152,7 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
     st.write("") # Small spacer between cards
 
     # =========================================================================
-    # ROW 3: FINANCIAL REWARDS & ACTIVE TIERS (Wrapped in a Card Container)
+    # ROW 4: FINANCIAL REWARDS & ACTIVE TIERS (Wrapped in a Card Container)
     # =========================================================================
     with st.container(border=True):
         st.subheader("💰 Financial Rewards & Active Tiers")
@@ -157,7 +166,7 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
     st.write("---")
 
     # =========================================================================
-    # ROW 4: CROP DATA TABLE
+    # ROW 5: CROP DATA TABLE
     # =========================================================================
     st.subheader("📋 Crop Data Table")
     st.dataframe(df, use_container_width=True, hide_index=True)
