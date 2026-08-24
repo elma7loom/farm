@@ -84,7 +84,7 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
     with col_right:
         st.markdown("**📊 Performance Comparison**")
         macro_df = pd.DataFrame({
-            "Metric": ["Starting", "Current", "Target"],
+            "Metric": ["Starting Water Consumption", "Current Water Consumption", "Target Water Consumption"],
             "Water (kL)": [starting_water, current_water, efficient_baseline]
         }).set_index("Metric")
         st.bar_chart(macro_df, horizontal=True, height=170)
