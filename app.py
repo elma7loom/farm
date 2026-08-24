@@ -50,44 +50,43 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
     efficient_baseline = df["Water Consumption (kL)"].sum()
 
     # =========================================================================
-    # ROW 1: 2 COLUMNS (TIERS TABLE & CROP WATER CONSUMPTION CHART)
+    # ROW 1: EFFICIENCY TIERS TABLE (Full width or standalone section)
     # =========================================================================
-    st.subheader("📊 Overview & Multiplier Settings")
-    
-    col_left, col_right = st.columns(2)
-    
-    with col_left:
-        st.markdown("**⚙️ Efficiency Tiers (Editable)**")
-        st.session_state.tier_df = st.data_editor(
-            st.session_state.tier_df,
-            column_config={
-                "Multiplier": st.column_config.NumberColumn(
-                    "Multiplier",
-                    min_value=1.0,
-                    max_value=2.5,
-                    step=0.1,
-                    format="%.1f"
-                )
-            },
-            disabled=["Tier", "Range"],
-            use_container_width=True,
-            height="content",
-            hide_index=True,
-            num_rows="fixed"
-        )
-
-    with col_right:
-        st.markdown("**📉 Water Consumption by Crop**")
-        chart_df = df.set_index("Crop")
-        st.bar_chart(chart_df, horizontal=True, height=170)
+    st.subheader("⚙️ Efficiency Tiers Settings")
+    st.session_state.tier_df = st.data_editor(
+        st.session_state.tier_df,
+        column_config={
+            "Multiplier": st.column_config.NumberColumn(
+                "Multiplier",
+                min_value=1.0,
+                max_value=2.5,
+                step=0.1,
+                format="%.1f"
+            )
+        },
+        disabled=["Tier", "Range"],
+        use_container_width=True,
+        height="content",
+        hide_index=True,
+        num_rows="fixed"
+    )
 
     st.write("---")
 
     # =========================================================================
-    # ROW 2: FULL-WIDTH MACRO PERFORMANCE COMPARISON CHART
+    # ROW 2: BOTH CHARTS SIDE-BY-SIDE ON THEIR OWN LINE
     # =========================================================================
-    with st.container(border=True):
-        st.subheader("📊 Macro Performance Comparison")
+    st.subheader("📊 Visual Analytics & Comparisons")
+    
+    chart_col1, chart_col2 = st.columns(2)
+    
+    with chart_col1:
+        st.markdown("**📉 Water Consumption by Crop**")
+        chart_df = df.set_index("Crop")
+        st.bar_chart(chart_df, horizontal=True, height=210)
+
+    with chart_col2:
+        st.markdown("**📊 Performance Comparison**")
         macro_df = pd.DataFrame({
             "Metric": [
                 "Starting Water Consumption", 
@@ -96,7 +95,7 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
             ],
             "Water (kL)": [starting_water, current_water, efficient_baseline]
         }).set_index("Metric")
-        st.bar_chart(macro_df, horizontal=True, height=180)
+        st.bar_chart(macro_df, horizontal=True, height=210)
 
     st.write("---")
 
