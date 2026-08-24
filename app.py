@@ -92,7 +92,7 @@ else:
     st.sidebar.divider()
     st.sidebar.header("⚙️ Economics & Credits")
     install_cost = st.sidebar.number_input("Infrastructure Setup Cost (AED):", min_value=10000.0, max_value=1000000.0, value=150000.0, step=10000.0)
-    falaj_credit_price = st.sidebar.slider("Credit Price Sweet Spot (AED/cube):", min_value=2.0, max_value=5.0, value=2.5, step=0.1)
+    falaj_credit_price = st.sidebar.slider("Credit Price Sweet Spot (AED/cube):", min_value=2.0, max_value=3.5, value=2.5, step=0.1)
 
 
 # =========================================================================
