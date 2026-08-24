@@ -47,13 +47,14 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
         ])
 
     df = pd.DataFrame(crop_data)
+    efficient_baseline = df["Water Consumption (kL)"].sum()
 
     # =========================================================================
-    # ROW 1: COMPACT EFFICIENCY TIERS TABLE (ON THE SIDE) & CROP CHART
+    # TOP SECTION: 3 COLUMNS (TIERS TABLE, CROP CHART, MACRO COMPARISON CHART)
     # =========================================================================
     st.subheader("📊 Overview & Multiplier Settings")
     
-    col_left, col_right = st.columns([1, 1])
+    col_left, col_middle, col_right = st.columns(3)
     
     with col_left:
         st.markdown("**⚙️ Efficiency Tiers (Editable)**")
@@ -75,18 +76,22 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
             num_rows="fixed"
         )
 
-    with col_right:
+    with col_middle:
         st.markdown("**📉 Water Consumption by Crop**")
         chart_df = df.set_index("Crop")
-        # Horizontal bar chart keeps crop labels upright and readable
         st.bar_chart(chart_df, horizontal=True, height=170)
+
+    with col_right:
+        st.markdown("**📊 Performance Comparison**")
+        macro_df = pd.DataFrame({
+            "Metric": ["Starting", "Current", "Target"],
+            "Water (kL)": [starting_water, current_water, efficient_baseline]
+        }).set_index("Metric")
+        st.bar_chart(macro_df, horizontal=True, height=170)
 
     st.write("---")
 
     # --- CALCULATIONS ---
-    efficient_baseline = df["Water Consumption (kL)"].sum()
-    
-    # Savings calculations (Starting vs Current)
     water_saved_kl = max(0.0, starting_water - current_water)
     water_saved_m3 = water_saved_kl  
     
