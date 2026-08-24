@@ -6,19 +6,21 @@ st.set_page_config(layout="wide")
 
 st.title("🌱 Farm Data Visualization & Water Efficiency Dashboard")
 
-# --- SIDEBAR INPUTS ---
+# --- SIDEBAR INPUTS (Organized to fix sidebar overload) ---
 st.sidebar.header("Farm Data Inputs")
 
-# Starting vs Current Water Consumption inputs
-starting_water = st.sidebar.number_input("Starting Water Consumption (Before Reduction in kL):", min_value=0.0, format="%.2f")
-current_water = st.sidebar.number_input("Current Water Consumption (After Reduction in kL):", min_value=0.0, format="%.2f")
+starting_water = st.sidebar.number_input("Starting Water Consumption (kL):", min_value=0.0, format="%.2f", value=564.0)
+current_water = st.sidebar.number_input("Current Water Consumption (kL):", min_value=0.0, format="%.2f", value=431.0)
 
-# Water Credit slider configuration
+st.sidebar.divider()
+
 st.sidebar.header("Water Credit Settings")
 water_credit_value = st.sidebar.slider("1 Water Credit = (m³)", min_value=1.0, max_value=100.0, value=10.0, step=1.0)
 
-# Blank for amount of crops grown (accepts 1-15 digits)
-num_crops_input = st.sidebar.text_input("Enter the amount of crops grown (1-15 digits):", value="1")
+st.sidebar.divider()
+
+st.sidebar.header("Crop Configuration")
+num_crops_input = st.sidebar.text_input("Enter amount of crops grown (1-15 digits):", value="2")
 
 # Validate the 1-15 digits constraint
 if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
@@ -30,13 +32,17 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
         st.sidebar.warning("Large number entered. Displaying input fields for the first 50 crops.")
 
     crop_data = []
-    st.sidebar.subheader("Crop Details")
-
-    for i in range(render_limit):
-        crop_name = st.sidebar.text_input(f"Crop {i+1} Name", value=f"Crop {i+1}", key=f"name_{i}")
-        crop_water = st.sidebar.number_input(f"Annual Water (kL) for {crop_name}", min_value=0.0, key=f"water_{i}")
-        
-        crop_data.append({"Crop": crop_name, "Water Consumption (kL)": crop_water})
+    
+    # SIDEBAR OVERLOAD FIX: Wrapped long dynamic lists inside a collapsible expander
+    with st.sidebar.expander("📋 Manage Crop Details", expanded=True):
+        for i in range(render_limit):
+            default_name = "tomato" if i == 0 else ("dates" if i == 1 else f"Crop {i+1}")
+            default_water = 119.0 if i == 0 else (205.0 if i == 1 else 100.0)
+            
+            crop_name = st.text_input(f"Crop {i+1} Name", value=default_name, key=f"name_{i}")
+            crop_water = st.number_input(f"Water (kL) for {crop_name if crop_name else f'Crop {i+1}'}", min_value=0.0, value=default_water, key=f"water_{i}")
+            
+            crop_data.append({"Crop": crop_name, "Water Consumption (kL)": crop_water})
 
     # --- STATE INITIALIZATION FOR TIERS ---
     if "tier_df" not in st.session_state:
@@ -50,7 +56,7 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
     efficient_baseline = df["Water Consumption (kL)"].sum()
 
     # =========================================================================
-    # ROW 1: EFFICIENCY TIERS TABLE (Full width or standalone section)
+    # ROW 1: EFFICIENCY TIERS TABLE SETTINGS
     # =========================================================================
     st.subheader("⚙️ Efficiency Tiers Settings")
     st.session_state.tier_df = st.data_editor(
@@ -74,7 +80,7 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
     st.write("---")
 
     # =========================================================================
-    # ROW 2: BOTH CHARTS SIDE-BY-SIDE ON THEIR OWN LINE
+    # ROW 2: SIDE-BY-SIDE CHARTS (Fixed label truncation with short names)
     # =========================================================================
     st.subheader("📊 Visual Analytics & Comparisons")
     
@@ -87,12 +93,9 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
 
     with chart_col2:
         st.markdown("**📊 Performance Comparison**")
+        # Shortened labels prevent the '...' truncation bug
         macro_df = pd.DataFrame({
-            "Metric": [
-                "Starting Water Consumption", 
-                "Current Water Consumption", 
-                "Target Water Consumption"
-            ],
+            "Metric": ["Starting", "Current", "Target"],
             "Water (kL)": [starting_water, current_water, efficient_baseline]
         }).set_index("Metric")
         st.bar_chart(macro_df, horizontal=True, height=210)
