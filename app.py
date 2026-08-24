@@ -57,7 +57,6 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
     
     with col_left:
         st.markdown("**⚙️ Efficiency Tiers (Editable)**")
-        # num_rows="fixed" and height="content" remove the extra blank row and trailing space
         st.session_state.tier_df = st.data_editor(
             st.session_state.tier_df,
             column_config={
