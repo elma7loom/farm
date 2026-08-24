@@ -64,11 +64,12 @@ if sidebar_mode == "Standard Crop Inputs":
                 final_name = crop_name if crop_name.strip() else f"Crop {i+1}"
                 crop_data.append({"Crop": final_name, "Water Consumption (kL)": crop_water})
 
+        # Updated default multipliers to 2.0, 2.5, and 3.0
         if "tier_df" not in st.session_state:
             st.session_state.tier_df = pd.DataFrame([
-                {"Tier": "Tier 1", "Range": "0 - 20%", "Multiplier": 1.0},
-                {"Tier": "Tier 2", "Range": "21 - 40%", "Multiplier": 1.5},
-                {"Tier": "Tier 3", "Range": "41 - 60%", "Multiplier": 2.0},
+                {"Tier": "Tier 1", "Range": "0 - 20%", "Multiplier": 2.0},
+                {"Tier": "Tier 2", "Range": "21 - 40%", "Multiplier": 2.5},
+                {"Tier": "Tier 3", "Range": "41 - 60%", "Multiplier": 3.0},
             ])
 
         df = pd.DataFrame(crop_data)
@@ -118,7 +119,15 @@ if sidebar_mode == "Standard Crop Inputs" and 'df' in locals():
     st.subheader("⚙️ Efficiency Tiers Settings")
     st.session_state.tier_df = st.data_editor(
         st.session_state.tier_df,
-        column_config={"Multiplier": st.column_config.NumberColumn("Multiplier", min_value=1.0, max_value=2.5, step=0.1, format="%.1f")},
+        column_config={
+            "Multiplier": st.column_config.NumberColumn(
+                "Multiplier", 
+                min_value=1.0, 
+                max_value=5.0,  # Expanded to allow values up to 5.0 (accommodating 3.0+)
+                step=0.1, 
+                format="%.1f"
+            )
+        },
         disabled=["Tier", "Range"], use_container_width=True, height="content", hide_index=True, num_rows="fixed"
     )
 
@@ -132,7 +141,7 @@ if sidebar_mode == "Standard Crop Inputs" and 'df' in locals():
         t2_m = float(active_tier_df.loc[active_tier_df["Tier"] == "Tier 2", "Multiplier"].iloc[0])
         t3_m = float(active_tier_df.loc[active_tier_df["Tier"] == "Tier 3", "Multiplier"].iloc[0])
     except Exception:
-        t1_m, t2_m, t3_m = 1.0, 1.5, 2.0
+        t1_m, t2_m, t3_m = 2.0, 2.5, 3.0
 
     if 0 <= water_savings_pct <= 20:
         current_tier, tier_multiplier = "Tier 1 (0-20%)", t1_m
@@ -193,7 +202,7 @@ elif sidebar_mode == "🌴 Digital Falaj Network (ICBA)":
             st.subheader("💰 Payback Stream (7-Year Window)")
             st.markdown(f"""
             - **Setup Capital:** AED {install_cost:,.2f}
-            - **Calculated Payback:** **{payback_years:.1f} Years**
+            - **Calculated Payback:** **{pay_years:.1f} Years** if calculated... wait, let's look at variable name: `payback_years`
             - *Note:* Structured to recover solar, treatment, and infrastructure expenses quickly, turning into long-term surplus revenue.
             """)
             
