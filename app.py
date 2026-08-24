@@ -33,15 +33,27 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
 
     crop_data = []
     
-    # Streamlined crop inputs to reduce visual clutter
+    # Streamlined crop inputs with inline side-by-side layout to reduce visual clutter
     with st.sidebar.expander("📋 Manage Crop Details", expanded=True):
         for i in range(render_limit):
             default_name = "tomato" if i == 0 else ("dates" if i == 1 else f"Crop {i+1}")
-            default_water = 119.0 if i == 0 else (205.0 if i == 1 else 100.0)
+            default_water = 119.0 if i == 0 else (210.0 if i == 1 else 100.0)
             
             st.markdown(f"**Crop {i+1}**")
-            crop_name = st.text_input("Name", value=default_name, key=f"name_{i}", placeholder="e.g. Tomato")
-            crop_water = st.number_input("Water (kL)", min_value=0.0, value=default_water, key=f"water_{i}")
+            
+            # Inline row for Name
+            c1, c2 = st.columns([1, 2])
+            with c1:
+                st.markdown("<p style='padding-top:8px; font-size:14px;'>Name</p>", unsafe_allow_html=True)
+            with c2:
+                crop_name = st.text_input(f"Name_{i}", value=default_name, key=f"name_{i}", label_visibility="collapsed")
+            
+            # Inline row for Water
+            c3, c4 = st.columns([1, 2])
+            with c3:
+                st.markdown("<p style='padding-top:8px; font-size:14px;'>Water (kL)</p>", unsafe_allow_html=True)
+            with c4:
+                crop_water = st.number_input(f"Water_{i}", min_value=0.0, value=default_water, key=f"water_{i}", label_visibility="collapsed")
             
             if i < render_limit - 1:
                 st.divider()
