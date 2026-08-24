@@ -182,11 +182,18 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
 
     st.write("---")
 
-    # Crop Data Table (Formatted with 1, 2, 3... index column)
+    # Crop Data Table (Centered on the page and text-aligned to the middle)
     st.subheader("📋 Crop Data Table")
     display_df = df.copy()
     display_df.insert(0, "No.", range(1, len(display_df) + 1))
-    st.dataframe(display_df, use_container_width=True, hide_index=True)
+    
+    t_col1, t_col2, t_col3 = st.columns([1, 2, 1])
+    with t_col2:
+        styled_table = display_df.style.set_table_styles([
+            {'selector': 'th', 'props': [('text-align', 'center')]},
+            {'selector': 'td', 'props': [('text-align', 'center')]}
+        ])
+        st.dataframe(styled_table, use_container_width=True, hide_index=True)
 
 else:
     st.sidebar.error("Please enter a valid number containing between 1 and 15 digits.")
