@@ -73,7 +73,29 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
     efficient_baseline = df["Water Consumption (kL)"].sum()
 
     # =========================================================================
-    # ROW 1: EFFICIENCY TIERS TABLE SETTINGS
+    # 1. CHARTS FIRST
+    # =========================================================================
+    st.subheader("📊 Visual Analytics & Comparisons")
+    
+    chart_col1, chart_col2 = st.columns(2)
+    
+    with chart_col1:
+        st.markdown("**📉 Water Consumption by Crop**")
+        chart_df = df.set_index("Crop")
+        st.bar_chart(chart_df, horizontal=True, height=210)
+
+    with chart_col2:
+        st.markdown("**📊 Performance Comparison**")
+        macro_df = pd.DataFrame({
+            "Metric": ["Starting", "Current", "Target"],
+            "Water (kL)": [starting_water, current_water, efficient_baseline]
+        }).set_index("Metric")
+        st.bar_chart(macro_df, horizontal=True, height=210)
+
+    st.write("---")
+
+    # =========================================================================
+    # 2. TIERS TABLE SECOND
     # =========================================================================
     st.subheader("⚙️ Efficiency Tiers Settings")
     st.session_state.tier_df = st.data_editor(
@@ -97,27 +119,8 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
     st.write("---")
 
     # =========================================================================
-    # ROW 2: SIDE-BY-SIDE CHARTS
+    # 3. VALUES AND EVERYTHING ELSE THIRD
     # =========================================================================
-    st.subheader("📊 Visual Analytics & Comparisons")
-    
-    chart_col1, chart_col2 = st.columns(2)
-    
-    with chart_col1:
-        st.markdown("**📉 Water Consumption by Crop**")
-        chart_df = df.set_index("Crop")
-        st.bar_chart(chart_df, horizontal=True, height=210)
-
-    with chart_col2:
-        st.markdown("**📊 Performance Comparison**")
-        macro_df = pd.DataFrame({
-            "Metric": ["Starting", "Current", "Target"],
-            "Water (kL)": [starting_water, current_water, efficient_baseline]
-        }).set_index("Metric")
-        st.bar_chart(macro_df, horizontal=True, height=210)
-
-    st.write("---")
-
     # --- CALCULATIONS ---
     water_saved_kl = max(0.0, starting_water - current_water)
     water_saved_m3 = water_saved_kl  
@@ -151,9 +154,7 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
     water_credits = water_saved_m3 / water_credit_value if water_credit_value > 0 else 0.0
     water_credits_value = water_credits * tier_multiplier
 
-    # =========================================================================
-    # ROW 3: VISUAL WATER SAVINGS PROGRESS (Wrapped in a Card Container)
-    # =========================================================================
+    # Visual Water Savings Progress Card
     with st.container(border=True):
         st.subheader("🎯 Visual Water Savings Progress (Target Max: 60%)")
         
@@ -169,9 +170,7 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
 
     st.write("") # Small spacer between cards
 
-    # =========================================================================
-    # ROW 4: FINANCIAL REWARDS & ACTIVE TIERS (Wrapped in a Card Container)
-    # =========================================================================
+    # Financial Rewards & Active Tiers Card
     with st.container(border=True):
         st.subheader("💰 Financial Rewards & Active Tiers")
         
@@ -183,9 +182,7 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
 
     st.write("---")
 
-    # =========================================================================
-    # ROW 5: CROP DATA TABLE
-    # =========================================================================
+    # Crop Data Table
     st.subheader("📋 Crop Data Table")
     st.dataframe(df, use_container_width=True, hide_index=True)
 
@@ -194,4 +191,4 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
 
 else:
     st.sidebar.error("Please enter a valid number containing between 1 and 15 digits.")
-    st.warning("👈 Please enter a valid number of crops in the sidebar to view the dashboard.")
+    st.sidebar.warning("👈 Please enter a valid number of crops in the sidebar to view the dashboard.")
