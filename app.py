@@ -79,7 +79,7 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
     with col_right:
         st.markdown("**📉 Water Consumption by Crop**")
         chart_df = df.set_index("Crop")
-        # Adding horizontal=True fixes the vertical text issue by orienting bars horizontally
+        # Horizontal bar chart keeps crop labels upright and readable
         st.bar_chart(chart_df, horizontal=True, height=170)
 
     st.write("---")
@@ -121,33 +121,34 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
     water_credits_value = water_credits * tier_multiplier
 
     # =========================================================================
-    # ROW 2: VISUAL WATER SAVINGS PROGRESS & METRICS (Scaled to 60% max)
+    # ROW 2: VISUAL WATER SAVINGS PROGRESS (Wrapped in a Card Container)
     # =========================================================================
-    st.subheader("🎯 Visual Water Savings Progress (Target Max: 60%)")
-    
-    # Progress bar fills completely at 60% savings
-    progress_val = min(1.0, max(0.0, water_savings_pct / 60.0))
-    st.markdown(f"**Water Reduction Progress: {water_savings_pct:,.2f}% Saved**")
-    st.progress(progress_val)
-    
-    b_col1, b_col2, b_col3, b_col4 = st.columns(4)
-    b_col1.metric("Original (Starting)", f"{starting_water:,.2f} kL")
-    b_col2.metric("Current Use", f"{current_water:,.2f} kL")
-    b_col3.metric("Water Saved", f"{water_saved_kl:,.2f} kL")
-    b_col4.metric("Efficient Target", f"{efficient_baseline:,.2f} kL", help="Sum of crop water consumptions")
+    with st.container(border=True):
+        st.subheader("🎯 Visual Water Savings Progress (Target Max: 60%)")
+        
+        progress_val = min(1.0, max(0.0, water_savings_pct / 60.0))
+        st.markdown(f"**Water Reduction Progress: {water_savings_pct:,.2f}% Saved**")
+        st.progress(progress_val)
+        
+        b_col1, b_col2, b_col3, b_col4 = st.columns(4)
+        b_col1.metric("Original (Starting)", f"{starting_water:,.2f} kL")
+        b_col2.metric("Current Use", f"{current_water:,.2f} kL")
+        b_col3.metric("Water Saved", f"{water_saved_kl:,.2f} kL")
+        b_col4.metric("Efficient Target", f"{efficient_baseline:,.2f} kL", help="Sum of crop water consumptions")
 
-    st.write("---")
+    st.write("") # Small spacer between cards
 
     # =========================================================================
-    # ROW 3: FINANCIAL REWARDS & ACTIVE TIERS
+    # ROW 3: FINANCIAL REWARDS & ACTIVE TIERS (Wrapped in a Card Container)
     # =========================================================================
-    st.subheader("💰 Financial Rewards & Active Tiers")
-    
-    fin_col1, fin_col2, fin_col3, fin_col4 = st.columns(4)
-    fin_col1.metric("🏆 Active Tier", current_tier)
-    fin_col2.metric("⚡ Multiplier", f"{tier_multiplier}x")
-    fin_col3.metric("Water Credits", f"{water_credits:,.2f}")
-    fin_col4.metric("Credits Value", f"AED {water_credits_value:,.2f}")
+    with st.container(border=True):
+        st.subheader("💰 Financial Rewards & Active Tiers")
+        
+        fin_col1, fin_col2, fin_col3, fin_col4 = st.columns(4)
+        fin_col1.metric("🏆 Active Tier", current_tier)
+        fin_col2.metric("⚡ Multiplier", f"{tier_multiplier}x")
+        fin_col3.metric("Water Credits", f"{water_credits:,.2f}")
+        fin_col4.metric("Credits Value", f"AED {water_credits_value:,.2f}")
 
     st.write("---")
 
