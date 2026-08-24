@@ -6,7 +6,7 @@ st.set_page_config(layout="wide")
 
 st.title("🌱 Farm Data Visualization & Water Efficiency Dashboard")
 
-# --- SIDEBAR INPUTS (Organized to fix sidebar overload) ---
+# --- SIDEBAR INPUTS ---
 st.sidebar.header("Farm Data Inputs")
 
 starting_water = st.sidebar.number_input("Starting Water Consumption (kL):", min_value=0.0, format="%.2f", value=564.0)
@@ -33,16 +33,21 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
 
     crop_data = []
     
-    # SIDEBAR OVERLOAD FIX: Wrapped long dynamic lists inside a collapsible expander
+    # Streamlined crop inputs to reduce visual clutter
     with st.sidebar.expander("📋 Manage Crop Details", expanded=True):
         for i in range(render_limit):
             default_name = "tomato" if i == 0 else ("dates" if i == 1 else f"Crop {i+1}")
             default_water = 119.0 if i == 0 else (205.0 if i == 1 else 100.0)
             
-            crop_name = st.text_input(f"Crop {i+1} Name", value=default_name, key=f"name_{i}")
-            crop_water = st.number_input(f"Water (kL) for {crop_name if crop_name else f'Crop {i+1}'}", min_value=0.0, value=default_water, key=f"water_{i}")
+            st.markdown(f"**Crop {i+1}**")
+            crop_name = st.text_input("Name", value=default_name, key=f"name_{i}", placeholder="e.g. Tomato")
+            crop_water = st.number_input("Water (kL)", min_value=0.0, value=default_water, key=f"water_{i}")
             
-            crop_data.append({"Crop": crop_name, "Water Consumption (kL)": crop_water})
+            if i < render_limit - 1:
+                st.divider()
+            
+            final_name = crop_name if crop_name.strip() else f"Crop {i+1}"
+            crop_data.append({"Crop": final_name, "Water Consumption (kL)": crop_water})
 
     # --- STATE INITIALIZATION FOR TIERS ---
     if "tier_df" not in st.session_state:
@@ -80,7 +85,7 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
     st.write("---")
 
     # =========================================================================
-    # ROW 2: SIDE-BY-SIDE CHARTS (Fixed label truncation with short names)
+    # ROW 2: SIDE-BY-SIDE CHARTS
     # =========================================================================
     st.subheader("📊 Visual Analytics & Comparisons")
     
@@ -93,7 +98,6 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
 
     with chart_col2:
         st.markdown("**📊 Performance Comparison**")
-        # Shortened labels prevent the '...' truncation bug
         macro_df = pd.DataFrame({
             "Metric": ["Starting", "Current", "Target"],
             "Water (kL)": [starting_water, current_water, efficient_baseline]
