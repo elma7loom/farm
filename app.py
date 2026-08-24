@@ -202,7 +202,7 @@ elif sidebar_mode == "🌴 Digital Falaj Network (ICBA)":
             st.subheader("💰 Payback Stream (7-Year Window)")
             st.markdown(f"""
             - **Setup Capital:** AED {install_cost:,.2f}
-            - **Calculated Payback:** **{pay_years:.1f} Years** if calculated... wait, let's look at variable name: `payback_years`
+            - **Calculated Payback:** **{payback_years:.1f} Years** if calculated... wait, let's look at variable name: `payback_years`
             - *Note:* Structured to recover solar, treatment, and infrastructure expenses quickly, turning into long-term surplus revenue.
             """)
             
