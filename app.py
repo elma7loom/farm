@@ -182,14 +182,16 @@ if num_crops_input.isdigit() and 1 <= len(num_crops_input) <= 15:
 
     st.write("---")
 
-    # Crop Data Table (Centered on the page and text-aligned to the middle)
+    # Crop Data Table (Centered, values formatted to 2 decimals and centered horizontally)
     st.subheader("📋 Crop Data Table")
     display_df = df.copy()
     display_df.insert(0, "No.", range(1, len(display_df) + 1))
     
     t_col1, t_col2, t_col3 = st.columns([1, 2, 1])
     with t_col2:
-        styled_table = display_df.style.set_table_styles([
+        styled_table = display_df.style.format({
+            "Water Consumption (kL)": "{:.2f}"
+        }).set_properties(**{'text-align': 'center'}).set_table_styles([
             {'selector': 'th', 'props': [('text-align', 'center')]},
             {'selector': 'td', 'props': [('text-align', 'center')]}
         ])
